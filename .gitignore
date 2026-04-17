@@ -17,3 +17,5 @@ productsync-web/out/
 .DS_Store
 *.log
 .vscode/
+trinis/node_modules/
+node_modules/

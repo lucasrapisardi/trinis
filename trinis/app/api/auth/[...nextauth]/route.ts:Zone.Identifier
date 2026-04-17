@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://claude.ai/chat/8c481e6a-8488-4bd9-b68f-ba007b8f6b96
+HostUrl=https://claude.ai/api/organizations/28cdded7-6481-4abe-92c6-f38b0d5411e1/conversations/8c481e6a-8488-4bd9-b68f-ba007b8f6b96/wiggle/download-file?path=%2Fmnt%2Fuser-data%2Foutputs%2Fproductsync-web%2Fsrc%2Fapp%2Fapi%2Fauth%2F%5B...nextauth%5D%2Froute.ts
