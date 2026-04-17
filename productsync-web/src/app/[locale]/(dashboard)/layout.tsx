@@ -1,5 +1,7 @@
 // PATH: src/app/(dashboard)/layout.tsx
 "use client";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
@@ -13,13 +15,13 @@ import {
 import { tenantApi } from "@/lib/api";
 import type { Tenant } from "@/types";
 
-const NAV = [
-  { href: "/",        label: "Dashboard", icon: LayoutDashboard },
-  { href: "/jobs",    label: "Jobs",      icon: Clock },
-  { href: "/products",label: "Products",  icon: Package },
-  { href: "/stores",  label: "Stores",    icon: Store },
-  { href: "/billing", label: "Billing",   icon: CreditCard },
-  { href: "/settings",label: "Settings",  icon: Settings },
+const NAV_ITEMS = [
+  { href: "/",         key: "dashboard", icon: LayoutDashboard },
+  { href: "/jobs",     key: "jobs",      icon: Clock },
+  { href: "/products", key: "products",  icon: Package },
+  { href: "/stores",   key: "stores",    icon: Store },
+  { href: "/billing",  key: "billing",   icon: CreditCard },
+  { href: "/settings", key: "settings",  icon: Settings },
 ];
 
 export default function DashboardLayout({
@@ -28,6 +30,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { data: session } = useSession();
+  const t = useTranslations();
   const pathname = usePathname();
   const [tenant, setTenant] = useState<Tenant | null>(null);
 
@@ -58,7 +61,7 @@ export default function DashboardLayout({
 
         {/* Nav */}
         <nav className="flex-1 px-2 py-2 space-y-0.5">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {NAV_ITEMS.map(({ href, key, icon: Icon }) => {
             const active =
               href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
@@ -68,7 +71,7 @@ export default function DashboardLayout({
                 className={clsx("nav-item", active && "nav-item-active")}
               >
                 <Icon size={13} className="opacity-60 flex-shrink-0" />
-                {label}
+                {t(`nav.${key}`)}
               </Link>
             );
           })}
@@ -105,10 +108,13 @@ export default function DashboardLayout({
                 {session?.user?.email}
               </p>
             </div>
+            <div className="px-3 pb-2">
+              <LanguageSwitcher />
+            </div>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
               className="p-1 text-gray-400 hover:text-gray-600 rounded"
-              title="Sign out"
+              title={t("nav.signOut")}
             >
               <LogOut size={13} />
             </button>

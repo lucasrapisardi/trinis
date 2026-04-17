@@ -74,17 +74,17 @@ export default function DashboardPage() {
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-2 mb-5">
         <MetricCard
-          label="Products synced"
+          label="Produtos sincronizados"
           value={(summary?.products_synced_this_month ?? 0).toLocaleString()}
-          sub="this month"
+          sub="este mês"
         />
         <MetricCard
-          label="Jobs this month"
+          label="Sincronizações este mês"
           value={(summary?.jobs_this_month ?? 0).toString()}
           sub={`${summary?.jobs_failed_this_month ?? 0} failed`}
         />
         <MetricCard
-          label="Plan usage"
+          label="Uso do plano"
           value={
             summary
               ? `${Math.round((summary.products_synced_this_month / summary.plan_limit) * 100)}%`
@@ -99,7 +99,7 @@ export default function DashboardPage() {
         <MetricCard
           label="Plan"
           value={summary?.plan ? summary.plan.charAt(0).toUpperCase() + summary.plan.slice(1) : "—"}
-          sub="current plan"
+          sub="plano atual"
         />
       </div>
 

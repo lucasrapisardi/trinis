@@ -1,0 +1,218 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "error": "Something went wrong",
+    "success": "Saved successfully",
+    "confirm": "Are you sure?",
+    "back": "Back",
+    "disconnect": "Disconnect",
+    "connect": "Connect",
+    "upgrade": "Upgrade",
+    "learnMore": "Learn more"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "jobs": "Jobs",
+    "products": "Products",
+    "stores": "Stores",
+    "billing": "Billing",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "fullName": "Full name",
+    "workspaceName": "Workspace name",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "alreadyAccount": "Already have an account?",
+    "resetPassword": "Reset password",
+    "sendResetLink": "Send reset link →",
+    "checkEmail": "Check your email",
+    "confirmEmail": "Confirm your email",
+    "emailConfirmed": "Email confirmed!",
+    "invalidCredentials": "Invalid email or password",
+    "emailNotConfirmed": "Please confirm your email before logging in",
+    "resendConfirmation": "Resend confirmation email"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "productsSynced": "Products synced",
+    "jobsThisMonth": "Jobs this month",
+    "failedJobs": "Failed jobs",
+    "lastSync": "Last sync",
+    "recentJobs": "Recent jobs",
+    "connectedStores": "Connected stores",
+    "quickActions": "Quick actions",
+    "newSync": "New sync",
+    "viewProducts": "View products",
+    "noJobs": "No jobs yet — start your first sync"
+  },
+  "jobs": {
+    "title": "Jobs",
+    "new": "New sync",
+    "status": {
+      "queued": "queued",
+      "running": "running",
+      "done": "done",
+      "done_with_errors": "done with errors",
+      "failed": "failed",
+      "cancelled": "cancelled"
+    },
+    "scraped": "Scraped",
+    "enriched": "Enriched",
+    "pushed": "Pushed",
+    "progress": "Progress",
+    "logs": "Logs",
+    "stop": "Stop",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "waitingForWorker": "Waiting for worker…",
+    "noLogs": "No logs yet",
+    "vendorSource": "Vendor source",
+    "shopifyStore": "Shopify store",
+    "productsToSync": "Products to sync",
+    "allProducts": "All products",
+    "customLimit": "Custom limit",
+    "whenToRun": "When to run",
+    "startImmediately": "Start immediately",
+    "scheduleForLater": "Schedule for later",
+    "startSync": "Start sync →",
+    "scheduleSync": "Schedule sync →",
+    "serviceUnavailable": "Sync service temporarily unavailable",
+    "serviceUnavailableDesc": "Your job will be queued and will start automatically once the service is back online.",
+    "pipelineSteps": {
+      "title": "This will run:",
+      "scrape": "Scrape products from the vendor",
+      "enrich": "Enrich descriptions + SEO with GPT-4o",
+      "image": "Upgrade images with gpt-image-1",
+      "push": "Push to your Shopify store"
+    }
+  },
+  "stores": {
+    "title": "Stores",
+    "connect": "Connect a new store",
+    "connected": "Connected stores",
+    "connectedAt": "Connected",
+    "lastSync": "last sync",
+    "webhooksPending": "webhooks pending",
+    "webhooksRegistered": "webhooks ✓",
+    "noStores": "No stores connected yet.",
+    "enterStore": "your-store",
+    "connectButton": "Connect →",
+    "redirectNotice": "You'll be redirected to Shopify to approve access.",
+    "tasks": {
+      "sku": "SKU",
+      "tags": "Tags",
+      "pricing": "Pricing"
+    }
+  },
+  "billing": {
+    "title": "Billing",
+    "currentPlan": "Current plan",
+    "active": "Active",
+    "pastDue": "Past due",
+    "productsSyncedThisMonth": "Products synced this month",
+    "manageBilling": "Manage billing →",
+    "billingDetails": "Billing details",
+    "nextInvoice": "Next invoice",
+    "amountDue": "Amount due",
+    "payment": "Payment",
+    "updatePayment": "Update payment →",
+    "invoiceHistory": "Invoice history",
+    "plans": {
+      "free": "Free",
+      "starter": "Starter",
+      "pro": "Pro",
+      "business": "Business",
+      "current": "Current",
+      "upgrade": "Upgrade →",
+      "features": {
+        "productsPerMonth": "products / mo",
+        "stores": "stores",
+        "manualSync": "Manual sync only",
+        "scheduledSync": "Scheduled sync",
+        "aiEnrichment": "AI enrichment",
+        "priorityQueue": "Priority queue",
+        "customAiRules": "Custom AI rules",
+        "unlimitedStores": "Unlimited stores"
+      }
+    },
+    "freeLimitReached": "You have reached your free plan limit. Upgrade to continue syncing or cancel your account.",
+    "cancelAccount": "Cancel account"
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "vendors": "Vendor sources",
+      "enrichment": "AI enrichment",
+      "schedule": "Sync schedule",
+      "team": "Team",
+      "cancel": "Cancel account"
+    },
+    "vendors": {
+      "add": "+ Add vendor",
+      "noVendors": "No vendors configured yet.",
+      "name": "Name",
+      "brandName": "Brand name",
+      "baseUrl": "Base URL",
+      "scrapeScope": "Scrape scope",
+      "categoria": "Categoria",
+      "subcategoria": "Subcategoria",
+      "paginaEspecifica": "Página específica",
+      "priceMultiplier": "Price multiplier",
+      "syncSchedule": "Sync schedule (cron)",
+      "scrapeFromHere": "← scrape from here",
+      "scopes": {
+        "categoria": "Entire category",
+        "subcategoria": "Subcategory",
+        "pagina": "Specific page"
+      }
+    },
+    "enrichment": {
+      "brandPrompt": "Brand description prompt",
+      "imageStyle": "Image background style",
+      "clickTemplate": "Click a template above or write your own prompt…",
+      "placeholder": "Use {brand_name} as a placeholder"
+    },
+    "team": {
+      "invite": "Invite a team member",
+      "members": "Team members",
+      "sendInvite": "Send invite",
+      "remove": "Remove",
+      "owner": "Owner",
+      "pending": "Pending",
+      "lastSeen": "Last seen",
+      "activityLog": "Activity log",
+      "upgradeRequired": "Team members require Pro plan",
+      "upgradeDesc": "Upgrade to Pro to invite up to 5 team members."
+    },
+    "cancel": {
+      "title": "Cancel account",
+      "description": "Cancelling your account will deactivate all connected stores and stop all syncs. Your data will be retained for 30 days before permanent deletion.",
+      "consequences": {
+        "stores": "All connected Shopify stores will be disconnected",
+        "syncs": "All scheduled syncs will be cancelled",
+        "stripe": "Your Stripe subscription will be cancelled immediately",
+        "data": "Data retained for 30 days then permanently deleted"
+      },
+      "button": "Cancel my account",
+      "confirm": "Are you sure you want to cancel your account? This cannot be undone."
+    }
+  },
+  "errors": {
+    "planLimitReached": "Plan limit reached — please upgrade",
+    "freePlanLimit": "Free plan limit reached — upgrade or cancel your account",
+    "userLimitReached": "User limit reached for your plan",
+    "storeNotFound": "Store not found",
+    "jobNotFound": "Job not found"
+  }
+}

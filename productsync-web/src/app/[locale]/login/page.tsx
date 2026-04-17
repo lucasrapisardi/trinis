@@ -1,5 +1,6 @@
 // PATH: src/app/login/page.tsx
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const t = useTranslations("auth");
   const [unconfirmed, setUnconfirmed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -73,7 +75,7 @@ export default function LoginPage() {
               disabled={loading}
               className="btn btn-primary w-full mt-2"
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Signing in…" : t("signIn")}
             </button>
           </form>
         </div>

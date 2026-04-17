@@ -1,5 +1,6 @@
 // PATH: /home/lumoura/trinis_ai/productsync-web/src/app/register/page.tsx
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,6 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const t = useTranslations("auth");
   const [form, setForm] = useState({ email: "", password: "", full_name: "", workspace_name: "" });
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -133,7 +135,7 @@ export default function RegisterPage() {
               disabled={loading}
               className="btn btn-primary w-full justify-center text-sm mt-2"
             >
-              {loading ? "Creating account…" : "Create account →"}
+              {loading ? "Creating account…" : t("signUp")}
             </button>
           </form>
 
