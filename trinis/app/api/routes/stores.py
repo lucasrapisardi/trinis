@@ -210,3 +210,53 @@ def _verify_shopify_hmac(params: dict, received_hmac: str) -> bool:
     print(f">>> received hmac: {received_hmac}")
 
     return hmac_lib.compare_digest(digest, received_hmac)
+
+
+# ─────────────────────────────────────────────
+# Manual task triggers
+# ─────────────────────────────────────────────
+
+@router.post("/{store_id}/tasks/{task_name}")
+async def run_store_task(
+    store_id: uuid.UUID,
+    task_name: str,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    """Manually trigger SKU, tags, or pricing update for entire store."""
+    if task_name not in ("sku", "tags", "pricing"):
+        raise HTTPException(status_code=400, detail="Invalid task. Use: sku, tags, pricing")
+
+    result = await db.execute(
+        select(ShopifyStore).where(
+            ShopifyStore.id == store_id,
+            ShopifyStore.tenant_id == tenant.id,
+            ShopifyStore.is_active == True,
+        )
+    )
+    store = result.scalar_one_or_none()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+
+    # Create a lightweight job record for tracking
+    from app.models.models import Job, JobStatus
+    job = Job(
+        tenant_id=tenant.id,
+        store_id=store.id,
+        status=JobStatus.queued,
+    )
+    db.add(job)
+    await db.flush()
+
+    # Dispatch the appropriate task
+    if task_name == "sku":
+        from app.tasks.sku import generate_skus
+        generate_skus.apply_async(args=[str(job.id), str(tenant.id)], queue="sync")
+    elif task_name == "tags":
+        from app.tasks.tags import update_tags
+        update_tags.apply_async(args=[str(job.id), str(tenant.id)], queue="sync")
+    elif task_name == "pricing":
+        from app.tasks.pricing import update_prices
+        update_prices.apply_async(args=[str(job.id), str(tenant.id)], queue="sync")
+
+    return {"ok": True, "job_id": str(job.id), "message": f"{task_name} task queued for {store.shop_domain}"}

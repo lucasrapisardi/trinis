@@ -5,13 +5,26 @@ import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import clsx from "clsx";
 import toast from "react-hot-toast";
-import { storesApi } from "@/lib/api";
+import api, { storesApi } from "@/lib/api";
 import type { ShopifyStore } from "@/types";
 
 export default function StoresPage() {
   const [stores, setStores] = useState<ShopifyStore[]>([]);
   const [domain, setDomain] = useState("");
   const [connecting, setConnecting] = useState(false);
+  const [runningTask, setRunningTask] = useState<string | null>(null);
+
+  async function handleRunTask(storeId: string, task: string) {
+    setRunningTask(`${storeId}-${task}`);
+    try {
+      await api.post(`/stores/${storeId}/tasks/${task}`);
+      toast.success(`${task} task queued for entire store!`);
+    } catch {
+      toast.error(`Failed to run ${task}`);
+    } finally {
+      setRunningTask(null);
+    }
+  }
 
   useEffect(() => {
     storesApi.list().then((r) => setStores(r.data)).catch(() => null);
@@ -113,12 +126,38 @@ export default function StoresPage() {
                 ) : (
                   <span className="text-amber-500">webhooks pending</span>
                 )}
-                <button
-                  onClick={() => handleDisconnect(store.id, store.shop_domain)}
-                  className="btn btn-danger text-[10px] py-0.5 px-2"
-                >
-                  Disconnect
-                </button>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleRunTask(store.id, "sku")}
+                    disabled={runningTask === `${store.id}-sku`}
+                    className="btn text-[10px] py-0.5 px-2"
+                    title="Generate SKUs for all products"
+                  >
+                    {runningTask === `${store.id}-sku` ? "…" : "SKU"}
+                  </button>
+                  <button
+                    onClick={() => handleRunTask(store.id, "tags")}
+                    disabled={runningTask === `${store.id}-tags`}
+                    className="btn text-[10px] py-0.5 px-2"
+                    title="Update tags for all products"
+                  >
+                    {runningTask === `${store.id}-tags` ? "…" : "Tags"}
+                  </button>
+                  <button
+                    onClick={() => handleRunTask(store.id, "pricing")}
+                    disabled={runningTask === `${store.id}-pricing`}
+                    className="btn text-[10px] py-0.5 px-2"
+                    title="Recalculate prices for all products"
+                  >
+                    {runningTask === `${store.id}-pricing` ? "…" : "Pricing"}
+                  </button>
+                  <button
+                    onClick={() => handleDisconnect(store.id, store.shop_domain)}
+                    className="btn btn-danger text-[10px] py-0.5 px-2"
+                  >
+                    Disconnect
+                  </button>
+                </div>
               </div>
             </div>
           ))}
