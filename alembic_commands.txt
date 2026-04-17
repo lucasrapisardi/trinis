@@ -1,0 +1,17 @@
+# Check current state
+alembic current
+
+# Auto-generate a new migration after changing models
+alembic revision --autogenerate -m "add vendor keywords column"
+
+# Roll back one migration
+alembic downgrade -1
+
+# See migration history
+alembic history
+
+alembic upgrade head
+The simplest fix since the tables already exist from create_all is to drop them all first, then re-run. But a cleaner approach is to just stamp the database as already being at the migration head — since create_all already created the correct schema:
+
+alembic stamp head
+

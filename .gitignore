@@ -1,0 +1,19 @@
+# Backend
+trinis/venv/
+trinis/__pycache__/
+trinis/**/__pycache__/
+trinis/**/*.pyc
+trinis/.env
+trinis/*.egg-info/
+
+# Frontend
+productsync-web/node_modules/
+productsync-web/.next/
+productsync-web/.env.local
+productsync-web/.env
+productsync-web/out/
+
+# Sistema
+.DS_Store
+*.log
+.vscode/

@@ -1,0 +1,48 @@
+# 1. Copy env and fill in your keys
+cp .env.example .env
+
+# 2. Generate a Fernet key for token encryption
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# → paste into SHOPIFY_TOKEN_ENCRYPTION_KEY
+
+# 3. Start Postgres + Redis
+docker-compose up db redis -d
+
+# 4. Install deps
+pip install -r requirements.txt
+
+# 5. Start the API
+uvicorn app.main:app --reload
+# → http://localhost:8000/docs
+
+# 6. Start a Celery worker (separate terminal)
+celery -A app.tasks.celery_app worker --loglevel=info -Q scrape,enrich,image,sync,default
+
+Serviços de infraestrutura
+# PostgreSQL
+sudo service postgresql start
+
+# Redis
+sudo service redis start
+
+# MinIO (via Docker)
+cd ~/trinis_ai/trinis
+docker-compose up minio -d
+
+Backend
+bashcd ~/trinis_ai/trinis
+source venv/bin/activate
+
+# Rodar migrations
+alembic upgrade head
+
+# Terminal 1 — FastAPI
+uvicorn app.main:app --reload
+
+# Terminal 2 — Celery worker
+celery -A app.tasks.celery_app worker --loglevel=info -Q scrape,enrich,image,sync,default
+
+# Terminal 3 — Celery beat (agendamento)
+celery -A app.tasks.celery_app beat --loglevel=info
+
+chmod +x ~/trinis_ai/start.sh
