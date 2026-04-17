@@ -1,6 +1,7 @@
 // PATH: /home/lumoura/trinis_ai/productsync-web/src/components/LanguageSwitcher.tsx
 "use client";
 
+import api from "@/lib/api";
 import { useLocale } from "next-intl";
 import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
@@ -20,7 +21,9 @@ export function LanguageSwitcher() {
 
   const current = LOCALES.find((l) => l.code === locale) ?? LOCALES[0];
 
-  function switchLocale(newLocale: string) {
+  async function switchLocale(newLocale: string) {
+    // Save locale preference to backend (best effort)
+    try { await api.put(`/auth/locale?locale=${newLocale}`); } catch {}
     const segments = pathname.split("/");
     const hasLocale = LOCALES.some((l) => l.code === segments[1]);
     const newPath = hasLocale

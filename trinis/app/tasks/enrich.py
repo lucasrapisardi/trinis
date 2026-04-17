@@ -31,7 +31,17 @@ def enrich_products(self, job_id: str, tenant_id: str, products: list[dict]):
                 return
 
             client = OpenAI(api_key=settings.openai_api_key)
-            system_prompt = config.brand_prompt or _default_brand_prompt(config.brand_name or "")
+            # Get tenant locale for language-aware prompts
+            from app.models.models import Tenant, User
+            from sqlalchemy import select as sa_select
+            tenant_result = ctx.db.execute(
+                sa_select(User).where(User.tenant_id == job.tenant_id, User.is_owner == True)
+            ).scalar_one_or_none()
+            locale = getattr(tenant_result, "locale", "pt") if tenant_result else "pt"
+
+            system_prompt = config.brand_prompt or _default_brand_prompt(
+                config.brand_name or "", locale=locale
+            )
 
             ctx.log("info", f"Enriching {len(products)} products with GPT-4o...")
 
@@ -100,10 +110,25 @@ def _call_gpt(client: OpenAI, system_prompt: str, product: dict, config: VendorC
     return (resp.choices[0].message.content or "").strip()
 
 
-def _default_brand_prompt(brand_name: str) -> str:
-    return f"""
+def _default_brand_prompt(brand_name: str, locale: str = "pt") -> str:
+    prompts = {
+        "pt": f"""
 Você é um especialista em criar descrições de produto para a marca {brand_name}.
 Gere descrições com SEO otimizado, storytelling e estrutura técnica clara.
 Inclua: título H1, subtítulo, storytelling, informações técnicas, meta descrição e tags SEO.
-Não use emojis. Retorne apenas o texto final formatado.
-"""
+Não use emojis. Retorne apenas o texto final formatado em português.
+""",
+        "en": f"""
+You are a product description expert for the brand {brand_name}.
+Generate SEO-optimized descriptions with storytelling and clear technical structure.
+Include: H1 title, subtitle, storytelling, technical information, meta description and SEO tags.
+No emojis. Return only the final formatted text in English.
+""",
+        "es": f"""
+Eres un experto en crear descripciones de productos para la marca {brand_name}.
+Genera descripciones con SEO optimizado, storytelling y estructura técnica clara.
+Incluye: título H1, subtítulo, storytelling, información técnica, meta descripción y etiquetas SEO.
+Sin emojis. Devuelve solo el texto final formateado en español.
+""",
+    }
+    return prompts.get(locale) or prompts["pt"]
