@@ -1,5 +1,6 @@
 // PATH: src/app/(dashboard)/jobs/new/page.tsx
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,7 @@ export default function NewJobPage() {
   const [limitType, setLimitType] = useState<LimitType | null>(null);
   const [productLimit, setProductLimit] = useState(50);
   const [loading, setLoading] = useState(false);
+  const t = useTranslations("jobs");
   const [workersOnline, setWorkersOnline] = useState<boolean | null>(null);
 
   const selectedVendor = vendors.find((v) => v.id === vendorId);
@@ -191,7 +193,7 @@ export default function NewJobPage() {
           )}
 
           <button type="submit" disabled={loading || !vendorId || !storeId || !scheduleType || !limitType} className="btn btn-primary w-full justify-center text-sm">
-            {loading ? "Starting…" : scheduleType === "now" ? "Start sync →" : "Schedule sync →"}
+            {loading ? "Starting…" : scheduleType === "now" ? t("startSync") : t("scheduleSync")}
           </button>
         </form>
       </div>

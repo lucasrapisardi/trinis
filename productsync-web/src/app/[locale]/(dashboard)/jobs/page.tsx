@@ -1,5 +1,6 @@
 // PATH: src/app/(dashboard)/jobs/page.tsx
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";

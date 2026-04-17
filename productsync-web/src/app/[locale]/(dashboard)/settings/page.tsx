@@ -1,5 +1,6 @@
 // PATH: src/app/(dashboard)/settings/page.tsx
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
@@ -11,12 +12,12 @@ import type { VendorConfig } from "@/types";
 type Tab = "vendors" | "enrichment" | "schedule" | "team" | "cancel";
 type ScrapeScope = "categoria" | "subcategoria" | "pagina";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "vendors",    label: "Vendor sources" },
-  { id: "enrichment", label: "AI enrichment" },
-  { id: "schedule",   label: "Sync schedule" },
-  { id: "team",     label: "Team" },
-  { id: "cancel",    label: "Cancel account" },
+const TAB_KEYS: { id: Tab }[] = [
+  { id: "vendors" },
+  { id: "enrichment" },
+  { id: "schedule" },
+  { id: "team" },
+  { id: "cancel" },
 ];
 
 const BLANK_VENDOR = {
@@ -34,17 +35,17 @@ const BLANK_VENDOR = {
 const SCOPE_OPTIONS: { value: ScrapeScope; label: string; description: string }[] = [
   {
     value: "categoria",
-    label: "Entire category",
+    label: "Categoria inteira",
     description: "Scrape all subcategories and pages under the category",
   },
   {
     value: "subcategoria",
-    label: "Subcategory",
+    label: "Subcategoria",
     description: "Scrape all pages under a specific subcategory",
   },
   {
     value: "pagina",
-    label: "Specific page",
+    label: "Página específica",
     description: "Scrape only a single product listing page",
   },
 ];
@@ -67,6 +68,144 @@ interface AuditLogEntry {
   performed_by: string;
   created_at: string;
 }
+
+const BRAND_PROMPT_TEMPLATES = [
+  {
+    label: "Mediterranean lifestyle",
+    prompt: "You are a luxury product copywriter for {brand_name}, a Mediterranean-inspired homeware brand. Write SEO-optimized product descriptions that evoke warmth, sophistication, and the Mediterranean lifestyle. Use sensory language, mention materials and craftsmanship, and end with a lifestyle sentence. Keep descriptions between 80-120 words. Return only the description, no titles or labels.",
+  },
+  {
+    label: "Minimalist & modern",
+    prompt: "You are a copywriter for {brand_name}, a modern minimalist homeware brand. Write clean, concise product descriptions focused on form, function, and quality. Avoid flowery language. Highlight key features, dimensions when relevant, and materials. Keep descriptions between 60-90 words. Return only the description.",
+  },
+  {
+    label: "Premium & technical",
+    prompt: "You are a product specialist for {brand_name}. Write detailed, technical product descriptions that highlight specifications, materials, certifications, and practical benefits. Appeal to informed buyers who value quality and precision. Include care instructions when relevant. Keep descriptions between 100-140 words. Return only the description.",
+  },
+  {
+    label: "Storytelling & emotional",
+    prompt: "You are a brand storyteller for {brand_name}. Write emotionally engaging product descriptions that paint a scene — who uses this product, when, and how it improves their life. Blend lifestyle aspiration with practical details. Keep descriptions between 90-120 words. Return only the description.",
+  },
+];
+
+const IMAGE_PROMPT_TEMPLATES = [
+  {
+    label: "Stone texture background",
+    prompt: "Replace the background with a light natural stone surface — beige and sand tones, subtle texture, soft shadows. Keep the product exactly as-is, centered, well-lit. Professional product photography style.",
+  },
+  {
+    label: "White marble",
+    prompt: "Replace the background with a clean white marble surface with subtle grey veining. Keep the product exactly as-is. Soft, diffused lighting. Luxury product photography style.",
+  },
+  {
+    label: "Linen & wood",
+    prompt: "Replace the background with a warm linen cloth surface with a wooden plank element. Natural, warm tones. Keep the product exactly as-is. Artisan lifestyle photography style.",
+  },
+  {
+    label: "Pure white studio",
+    prompt: "Replace the background with a pure white studio background, perfectly clean. Keep the product exactly as-is with professional even lighting. E-commerce product photography style.",
+  },
+];
+
+function EnrichmentTab() {
+  const [brandPrompt, setBrandPrompt] = useState("");
+  const [imagePrompt, setImagePrompt] = useState("");
+  const [saving, setSaving] = useState(false);
+  const t = useTranslations("settings");
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await api.put("/tenant/enrichment-defaults", { brand_prompt: brandPrompt, image_style_prompt: imagePrompt });
+      toast.success("Defaults saved");
+    } catch {
+      toast.error("Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      <p className="text-xs text-gray-400">
+        Customize how AI enriches your product descriptions and images. Click a template to use it as a starting point.
+      </p>
+
+      {/* Brand prompt */}
+      <div className="card space-y-3">
+        <label className="block text-xs font-medium text-gray-700">Brand description prompt</label>
+
+        {/* Templates */}
+        <div className="grid grid-cols-2 gap-2">
+          {BRAND_PROMPT_TEMPLATES.map((t) => (
+            <button
+              key={t.label}
+              type="button"
+              onClick={() => setBrandPrompt(t.prompt)}
+              className={clsx(
+                "text-left p-2.5 rounded-lg border text-xs transition-colors",
+                brandPrompt === t.prompt
+                  ? "border-brand-600 bg-brand-50 text-brand-700"
+                  : "border-gray-200 hover:bg-gray-50 text-gray-600"
+              )}
+            >
+              <p className="font-medium">{t.label}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5 truncate">{t.prompt.slice(0, 60)}…</p>
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          className="input py-2 resize-none text-xs font-mono h-36"
+          placeholder="Click a template above or write your own prompt…"
+          value={brandPrompt}
+          onChange={(e) => setBrandPrompt(e.target.value)}
+          rows={6}
+        />
+        <p className="text-[10px] text-gray-400">
+          Use <code className="bg-gray-100 px-1 rounded">{"{brand_name}"}</code> as a placeholder — it will be replaced with your vendor&apos;s brand name.
+        </p>
+      </div>
+
+      {/* Image prompt */}
+      <div className="card space-y-3">
+        <label className="block text-xs font-medium text-gray-700">Image background style</label>
+
+        <div className="grid grid-cols-2 gap-2">
+          {IMAGE_PROMPT_TEMPLATES.map((t) => (
+            <button
+              key={t.label}
+              type="button"
+              onClick={() => setImagePrompt(t.prompt)}
+              className={clsx(
+                "text-left p-2.5 rounded-lg border text-xs transition-colors",
+                imagePrompt === t.prompt
+                  ? "border-brand-600 bg-brand-50 text-brand-700"
+                  : "border-gray-200 hover:bg-gray-50 text-gray-600"
+              )}
+            >
+              <p className="font-medium">{t.label}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5 truncate">{t.prompt.slice(0, 60)}…</p>
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          className="input py-2 resize-none text-xs font-mono h-24"
+          placeholder="Click a template above or write your own image style…"
+          value={imagePrompt}
+          onChange={(e) => setImagePrompt(e.target.value)}
+          rows={4}
+        />
+      </div>
+
+      <button onClick={handleSave} disabled={saving} className="btn btn-primary text-xs">
+        {saving ? "Saving…" : "Salvar padrões"}
+      </button>
+    </div>
+  );
+}
+
 
 function TeamTab() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -182,7 +321,7 @@ function TeamTab() {
             required
           />
           <button type="submit" disabled={inviting} className="btn btn-primary text-xs flex-shrink-0">
-            {inviting ? "Sending…" : "Send invite"}
+            {inviting ? "Sending…" : "Enviar convite"}
           </button>
         </form>
       </div>
@@ -291,7 +430,7 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-5 border-b border-gray-200">
-        {TABS.map(({ id, label }) => (
+        {TAB_KEYS.map(({ id }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -302,7 +441,7 @@ export default function SettingsPage() {
                 : "border-transparent text-gray-400 hover:text-gray-600"
             )}
           >
-            {label}
+            {t(`tabs.${id}`)}
           </button>
         ))}
       </div>
@@ -345,7 +484,7 @@ export default function SettingsPage() {
                       <span className="font-mono text-[10px]">{v.sync_schedule}</span>
                     )}
                     <span className={clsx("badge", v.is_active ? "badge-done" : "badge-queued")}>
-                      {v.is_active ? "active" : "paused"}
+                      {v.is_active ? "ativo" : "pausado"}
                     </span>
                   </div>
                   <div className="flex gap-1">
@@ -367,7 +506,7 @@ export default function SettingsPage() {
           {editing && (
             <div className="card space-y-4">
               <h2 className="text-xs font-medium text-gray-700">
-                {editing.id ? "Edit vendor" : "New vendor"}
+                {editing.id ? "Editar fornecedor" : "Novo fornecedor"}
               </h2>
 
               {/* Basic info */}
@@ -466,7 +605,7 @@ export default function SettingsPage() {
 
               <div className="flex gap-2 pt-1">
                 <button onClick={handleSaveVendor} disabled={saving} className="btn btn-primary text-xs">
-                  {saving ? "Saving…" : "Save vendor"}
+                  {saving ? "Saving…" : "Salvar fornecedor"}
                 </button>
                 <button onClick={() => setEditing(null)} className="btn text-xs">Cancel</button>
               </div>
@@ -477,23 +616,7 @@ export default function SettingsPage() {
 
       {/* ── Enrichment tab ───────────────────────────────────── */}
       {tab === "enrichment" && (
-        <div className="space-y-4">
-          <p className="text-xs text-gray-400">
-            Customize how AI enriches your product descriptions and images.
-          </p>
-          <div className="card space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Default brand prompt</label>
-              <textarea className="input h-32 py-2 resize-none text-xs font-mono" placeholder="You are a product description expert for [brand]…" rows={6} />
-              <p className="text-[10px] text-gray-400 mt-1">Used when no custom prompt is set on a vendor config.</p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Image style prompt</label>
-              <textarea className="input h-24 py-2 resize-none text-xs font-mono" placeholder="Replace plain white backgrounds with: Pedra Clara Texturizada…" rows={4} />
-            </div>
-            <button className="btn btn-primary text-xs">Save defaults</button>
-          </div>
-        </div>
+        <EnrichmentTab />
       )}
 
 
@@ -546,13 +669,13 @@ export default function SettingsPage() {
             <h2 className="text-xs font-medium text-gray-700">Common schedules</h2>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: "Every day at 2am",   cron: "0 2 * * *" },
-                { label: "Every 6 hours",       cron: "0 */6 * * *" },
-                { label: "Every Monday at 9am", cron: "0 9 * * 1" },
-                { label: "Every hour",          cron: "0 * * * *" },
+                { label: "Todo dia às 2h",   cron: "0 2 * * *" },
+                { label: "A cada 6 horas",       cron: "0 */6 * * *" },
+                { label: "Toda segunda às 9h", cron: "0 9 * * 1" },
+                { label: "A cada hora",          cron: "0 * * * *" },
               ].map(({ label, cron }) => (
                 <div key={cron} className="flex items-center justify-between p-2.5 border border-gray-100 rounded-lg text-xs">
-                  <span className="text-gray-600">{label}</span>
+                  <span className="text-gray-600">{t(`tabs.${id}`)}</span>
                   <span className="font-mono text-gray-400 text-[10px] bg-gray-50 px-2 py-0.5 rounded">{cron}</span>
                 </div>
               ))}

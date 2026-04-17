@@ -1,5 +1,6 @@
 // PATH: src/app/(dashboard)/billing/page.tsx
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
@@ -13,42 +14,43 @@ const PLANS = [
     name: "free" as PlanName,
     label: "Free",
     price: "$0",
-    features: ["100 products / mo", "1 store", "Manual sync only"],
+    features: ["100 produtos / mês", "1 loja", "Sincronização manual"],
     limit: 100,
   },
   {
     name: "starter" as PlanName,
     label: "Starter",
     price: "$19",
-    features: ["300 products / mo", "2 stores", "Scheduled sync"],
+    features: ["300 produtos / mês", "2 lojas", "Sincronização agendada"],
     limit: 300,
   },
   {
     name: "pro" as PlanName,
     label: "Pro",
     price: "$49",
-    features: ["1,000 products / mo", "5 stores", "Scheduled sync", "AI enrichment"],
+    features: ["1.000 produtos / mês", "5 lojas", "Sincronização agendada", "Enriquecimento por IA"],
     limit: 1000,
   },
   {
     name: "business" as PlanName,
     label: "Business",
     price: "$149",
-    features: ["10,000 products / mo", "Unlimited stores", "Priority queue", "Custom AI rules"],
+    features: ["10.000 produtos / mês", "Lojas ilimitadas", "Fila prioritária", "Regras de IA personalizadas"],
     limit: 10000,
   },
 ];
 
 // Mock invoices — in production fetch from your backend
 const MOCK_INVOICES = [
-  { date: "Apr 1, 2026", plan: "Pro plan", amount: "$49.00", status: "paid" },
-  { date: "Mar 1, 2026", plan: "Pro plan", amount: "$49.00", status: "paid" },
-  { date: "Feb 1, 2026", plan: "Pro plan", amount: "$49.00", status: "failed" },
-  { date: "Jan 1, 2026", plan: "Free plan", amount: "$0.00",  status: "paid" },
+  { date: "Apr 1, 2026", plan: "Pro plan", amount: "$49.00", status: "pago" },
+  { date: "Mar 1, 2026", plan: "Pro plan", amount: "$49.00", status: "pago" },
+  { date: "Feb 1, 2026", plan: "Pro plan", amount: "$49.00", status: "falhou" },
+  { date: "Jan 1, 2026", plan: "Free plan", amount: "$0.00",  status: "pago" },
 ];
 
 export default function BillingPage() {
   const { data: session } = useSession();
+  const t = useTranslations("billing");
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<PlanName | null>(null);
@@ -113,7 +115,7 @@ export default function BillingPage() {
               "badge text-[10px]",
               tenant?.payment_past_due ? "badge-failed" : "badge-done"
             )}>
-              {tenant?.payment_past_due ? "Past due" : "Active"}
+              {tenant?.payment_past_due ? "Pagamento em atraso" : t("active")}
             </span>
           </div>
 
@@ -145,7 +147,7 @@ export default function BillingPage() {
               disabled={loadingPortal}
               className="btn btn-primary text-xs"
             >
-              {loadingPortal ? "Opening…" : "Manage billing →"}
+              {loadingPortal ? "Abrindo…" : t("manageBilling")}
             </button>
           </div>
         </div>
@@ -155,9 +157,9 @@ export default function BillingPage() {
           <p className="text-xs font-medium text-gray-700 mb-3">Billing details</p>
           <div className="space-y-2.5 text-xs">
             {[
-              { label: "Next invoice", value: "May 1, 2026" },
-              { label: "Amount due",   value: tenant?.plan === "pro" ? "$49.00" : tenant?.plan === "business" ? "$149.00" : "$0.00" },
-              { label: "Payment",      value: "Visa ···· 4242" },
+              { label: "Próxima fatura", value: "May 1, 2026" },
+              { label: "Valor devido",   value: tenant?.plan === "pro" ? "$49.00" : tenant?.plan === "business" ? "$149.00" : "$0.00" },
+              { label: "Pagamento",      value: "Visa ···· 4242" },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between">
                 <span className="text-gray-400">{label}</span>
@@ -229,7 +231,7 @@ export default function BillingPage() {
                   disabled={loadingPlan === plan.name}
                   className="btn btn-primary text-xs w-full justify-center"
                 >
-                  {loadingPlan === plan.name ? "Loading…" : "Upgrade →"}
+                  {loadingPlan === plan.name ? "Carregando…" : "Fazer upgrade →"}
                 </button>
               )}
             </div>
@@ -255,7 +257,7 @@ export default function BillingPage() {
                 <td className="px-4 py-2.5">
                   <span className={clsx(
                     "badge",
-                    inv.status === "paid" ? "badge-done" : "badge-failed"
+                    inv.status === "pago" ? "badge-done" : "badge-failed"
                   )}>
                     {inv.status}
                   </span>

@@ -1,5 +1,6 @@
 // PATH: src/app/(dashboard)/stores/page.tsx
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
@@ -12,6 +13,7 @@ export default function StoresPage() {
   const [stores, setStores] = useState<ShopifyStore[]>([]);
   const [domain, setDomain] = useState("");
   const [connecting, setConnecting] = useState(false);
+  const t = useTranslations("stores");
   const [runningTask, setRunningTask] = useState<string | null>(null);
 
   async function handleRunTask(storeId: string, task: string) {
@@ -82,7 +84,7 @@ export default function StoresPage() {
             disabled={connecting}
             className="btn btn-primary text-xs whitespace-nowrap"
           >
-            {connecting ? "Redirecting…" : "Connect →"}
+            {connecting ? "Redirecting…" : "Conectar →"}
           </button>
         </form>
         <p className="text-[10px] text-gray-400 mt-2">

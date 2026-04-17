@@ -1,0 +1,218 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "loading": "Cargando…",
+    "saving": "Guardando…",
+    "error": "Algo salió mal",
+    "success": "Guardado correctamente",
+    "confirm": "¿Estás seguro?",
+    "back": "Volver",
+    "disconnect": "Desconectar",
+    "connect": "Conectar",
+    "upgrade": "Actualizar plan",
+    "learnMore": "Saber más"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "jobs": "Sincronizaciones",
+    "products": "Productos",
+    "stores": "Tiendas",
+    "billing": "Facturación",
+    "settings": "Configuración",
+    "signOut": "Cerrar sesión"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Crear cuenta",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "fullName": "Nombre completo",
+    "workspaceName": "Nombre del workspace",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes una cuenta?",
+    "alreadyAccount": "¿Ya tienes una cuenta?",
+    "resetPassword": "Restablecer contraseña",
+    "sendResetLink": "Enviar enlace de restablecimiento →",
+    "checkEmail": "Revisa tu correo",
+    "confirmEmail": "Confirma tu correo",
+    "emailConfirmed": "¡Correo confirmado!",
+    "invalidCredentials": "Correo o contraseña incorrectos",
+    "emailNotConfirmed": "Confirma tu correo antes de iniciar sesión",
+    "resendConfirmation": "Reenviar correo de confirmación"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "productsSynced": "Productos sincronizados",
+    "jobsThisMonth": "Sincronizaciones este mes",
+    "failedJobs": "Fallidas",
+    "lastSync": "Última sincronización",
+    "recentJobs": "Sincronizaciones recientes",
+    "connectedStores": "Tiendas conectadas",
+    "quickActions": "Acciones rápidas",
+    "newSync": "Nueva sincronización",
+    "viewProducts": "Ver productos",
+    "noJobs": "Sin sincronizaciones aún — inicia la primera"
+  },
+  "jobs": {
+    "title": "Sincronizaciones",
+    "new": "Nueva sincronización",
+    "status": {
+      "queued": "en cola",
+      "running": "ejecutando",
+      "done": "completado",
+      "done_with_errors": "completado con errores",
+      "failed": "fallido",
+      "cancelled": "cancelado"
+    },
+    "scraped": "Recopilados",
+    "enriched": "Enriquecidos",
+    "pushed": "Enviados",
+    "progress": "Progreso",
+    "logs": "Registros",
+    "stop": "Detener",
+    "cancel": "Cancelar",
+    "retry": "Reintentar",
+    "waitingForWorker": "Esperando worker…",
+    "noLogs": "Sin registros aún",
+    "vendorSource": "Fuente del proveedor",
+    "shopifyStore": "Tienda Shopify",
+    "productsToSync": "Productos a sincronizar",
+    "allProducts": "Todos los productos",
+    "customLimit": "Límite personalizado",
+    "whenToRun": "Cuándo ejecutar",
+    "startImmediately": "Iniciar inmediatamente",
+    "scheduleForLater": "Programar para después",
+    "startSync": "Iniciar sincronización →",
+    "scheduleSync": "Programar sincronización →",
+    "serviceUnavailable": "Servicio de sincronización temporalmente no disponible",
+    "serviceUnavailableDesc": "Tu trabajo se pondrá en cola y comenzará automáticamente cuando el servicio vuelva.",
+    "pipelineSteps": {
+      "title": "Esto ejecutará:",
+      "scrape": "Recopilar productos del proveedor",
+      "enrich": "Enriquecer descripciones + SEO con GPT-4o",
+      "image": "Mejorar imágenes con gpt-image-1",
+      "push": "Enviar a tu tienda Shopify"
+    }
+  },
+  "stores": {
+    "title": "Tiendas",
+    "connect": "Conectar nueva tienda",
+    "connected": "Tiendas conectadas",
+    "connectedAt": "Conectada",
+    "lastSync": "última sincronización",
+    "webhooksPending": "webhooks pendientes",
+    "webhooksRegistered": "webhooks ✓",
+    "noStores": "No hay tiendas conectadas aún.",
+    "enterStore": "tu-tienda",
+    "connectButton": "Conectar →",
+    "redirectNotice": "Serás redirigido a Shopify para aprobar el acceso.",
+    "tasks": {
+      "sku": "SKU",
+      "tags": "Etiquetas",
+      "pricing": "Precios"
+    }
+  },
+  "billing": {
+    "title": "Facturación",
+    "currentPlan": "Plan actual",
+    "active": "Activo",
+    "pastDue": "Pago vencido",
+    "productsSyncedThisMonth": "Productos sincronizados este mes",
+    "manageBilling": "Gestionar facturación →",
+    "billingDetails": "Detalles de facturación",
+    "nextInvoice": "Próxima factura",
+    "amountDue": "Importe pendiente",
+    "payment": "Pago",
+    "updatePayment": "Actualizar pago →",
+    "invoiceHistory": "Historial de facturas",
+    "plans": {
+      "free": "Gratis",
+      "starter": "Starter",
+      "pro": "Pro",
+      "business": "Business",
+      "current": "Actual",
+      "upgrade": "Actualizar →",
+      "features": {
+        "productsPerMonth": "productos / mes",
+        "stores": "tiendas",
+        "manualSync": "Sincronización manual",
+        "scheduledSync": "Sincronización programada",
+        "aiEnrichment": "Enriquecimiento por IA",
+        "priorityQueue": "Cola prioritaria",
+        "customAiRules": "Reglas de IA personalizadas",
+        "unlimitedStores": "Tiendas ilimitadas"
+      }
+    },
+    "freeLimitReached": "Has alcanzado el límite del plan gratuito. Actualiza para continuar sincronizando o cancela tu cuenta.",
+    "cancelAccount": "Cancelar cuenta"
+  },
+  "settings": {
+    "title": "Configuración",
+    "tabs": {
+      "vendors": "Fuentes de proveedor",
+      "enrichment": "Enriquecimiento IA",
+      "schedule": "Programación de sincronización",
+      "team": "Equipo",
+      "cancel": "Cancelar cuenta"
+    },
+    "vendors": {
+      "add": "+ Agregar proveedor",
+      "noVendors": "No hay proveedores configurados aún.",
+      "name": "Nombre",
+      "brandName": "Nombre de marca",
+      "baseUrl": "URL base",
+      "scrapeScope": "Alcance de recopilación",
+      "categoria": "Categoría",
+      "subcategoria": "Subcategoría",
+      "paginaEspecifica": "Página específica",
+      "priceMultiplier": "Multiplicador de precio",
+      "syncSchedule": "Programación de sincronización (cron)",
+      "scrapeFromHere": "← recopilar desde aquí",
+      "scopes": {
+        "categoria": "Categoría completa",
+        "subcategoria": "Subcategoría",
+        "pagina": "Página específica"
+      }
+    },
+    "enrichment": {
+      "brandPrompt": "Prompt de descripción de marca",
+      "imageStyle": "Estilo de fondo de imágenes",
+      "clickTemplate": "Haz clic en una plantilla o escribe la tuya…",
+      "placeholder": "Usa {brand_name} como variable"
+    },
+    "team": {
+      "invite": "Invitar miembro",
+      "members": "Miembros del equipo",
+      "sendInvite": "Enviar invitación",
+      "remove": "Eliminar",
+      "owner": "Propietario",
+      "pending": "Pendiente",
+      "lastSeen": "Último acceso",
+      "activityLog": "Registro de actividad",
+      "upgradeRequired": "Los miembros de equipo requieren plan Pro",
+      "upgradeDesc": "Actualiza a Pro para invitar hasta 5 miembros."
+    },
+    "cancel": {
+      "title": "Cancelar cuenta",
+      "description": "Cancelar tu cuenta desactivará todas las tiendas conectadas y detendrá todas las sincronizaciones.",
+      "consequences": {
+        "stores": "Todas las tiendas Shopify conectadas serán desconectadas",
+        "syncs": "Todas las sincronizaciones programadas serán canceladas",
+        "stripe": "Tu suscripción de Stripe se cancelará inmediatamente",
+        "data": "Los datos se conservarán 30 días y luego se eliminarán permanentemente"
+      },
+      "button": "Cancelar mi cuenta",
+      "confirm": "¿Estás seguro de que deseas cancelar tu cuenta? Esta acción no se puede deshacer."
+    }
+  },
+  "errors": {
+    "planLimitReached": "Límite del plan alcanzado — actualiza tu plan",
+    "freePlanLimit": "Límite del plan gratuito alcanzado — actualiza o cancela tu cuenta",
+    "userLimitReached": "Límite de usuarios del plan alcanzado",
+    "storeNotFound": "Tienda no encontrada",
+    "jobNotFound": "Sincronización no encontrada"
+  }
+}

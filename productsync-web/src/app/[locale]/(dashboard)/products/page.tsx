@@ -1,5 +1,6 @@
 // PATH: src/app/(dashboard)/products/page.tsx
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
@@ -25,6 +26,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const t = useTranslations("nav");
   const [statusFilter, setStatusFilter] = useState("all");
 
   async function load() {
@@ -67,7 +69,7 @@ export default function ProductsPage() {
       <div className="flex gap-2 mb-4">
         <input
           className="input text-xs max-w-xs"
-          placeholder="Search by name or EAN…"
+          placeholder="Buscar por nome ou EAN…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -92,8 +94,8 @@ export default function ProductsPage() {
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-sm text-gray-400">
             {products.length === 0
-              ? "No products synced yet — run your first sync job."
-              : "No products match your search."}
+              ? "Nenhum produto sincronizado ainda — execute sua primeira sincronização."
+              : "Nenhum produto encontrado."}
           </div>
         ) : (
           <table className="w-full text-xs">

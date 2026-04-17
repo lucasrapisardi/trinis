@@ -1,5 +1,6 @@
 // PATH: src/app/(dashboard)/jobs/[id]/page.tsx
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
@@ -29,6 +30,7 @@ const STATUS_BADGE: Record<string, string> = {
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: session } = useSession();
+  const t = useTranslations("jobs");
   const router = useRouter();
 
   const [job, setJob] = useState<Job | null>(null);
@@ -163,7 +165,7 @@ export default function JobDetailPage() {
           )}
           {(job.status === "running" || job.status === "queued") && (
             <button onClick={handleStop} className="btn btn-danger text-xs">
-              <Square size={12} /> {job.status === "queued" ? "Cancel" : "Stop"}
+              <Square size={12} /> {job.status === "queued" ? t("cancel") : t("stop")}
             </button>
           )}
         </div>
@@ -172,9 +174,9 @@ export default function JobDetailPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Scraped",  value: job.products_scraped },
-          { label: "Enriched", value: job.products_enriched },
-          { label: "Pushed",   value: job.products_pushed },
+          { label: t("scraped"),  value: job.products_scraped },
+          { label: t("enriched"), value: job.products_enriched },
+          { label: t("pushed"),   value: job.products_pushed },
         ].map(({ label, value }) => (
           <div key={label} className="bg-gray-100 rounded-lg px-3 py-2.5">
             <p className="text-[10px] text-gray-400">{label}</p>
@@ -240,7 +242,7 @@ export default function JobDetailPage() {
                 )}
               />
               <span className="text-[10px] text-gray-400">
-                {wsConnected ? "live" : "disconnected"}
+                {wsConnected ? "ao vivo" : "desconectado"}
               </span>
             </div>
             <button
@@ -265,7 +267,7 @@ export default function JobDetailPage() {
         >
           {logs.length === 0 ? (
             <p className="text-xs text-gray-400 py-2">
-              {job.status === "queued" ? "Waiting for worker…" : "No logs yet"}
+              {job.status === "queued" ? t("waitingForWorker") : t("noLogs")}
             </p>
           ) : (
             logs.map((log) => (
