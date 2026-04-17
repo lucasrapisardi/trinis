@@ -20,7 +20,7 @@ settings = get_settings()
 
 
 @celery_app.task(bind=True, base=JobTask, queue="sync", max_retries=3)
-def update_prices(self, job_id: str, tenant_id: str):
+def update_prices(self, job_id: str, tenant_id: str, product_ids: list[str] | None = None):
     """
     Iterates all Shopify products for the tenant's store and
     recalculates prices from inventory cost using the configured multiplier.
@@ -67,6 +67,8 @@ def update_prices(self, job_id: str, tenant_id: str):
                         break
 
                     for product in products:
+                        if product_ids and str(product.get("id","")) not in product_ids:
+                            continue
                         total += 1
                         for variant in product.get("variants", []):
                             result = _update_variant_price(

@@ -20,7 +20,7 @@ settings = get_settings()
 
 
 @celery_app.task(bind=True, base=JobTask, queue="sync", max_retries=3)
-def generate_skus(self, job_id: str, tenant_id: str):
+def generate_skus(self, job_id: str, tenant_id: str, product_ids: list[str] | None = None):
     """
     Iterates all Shopify products for the tenant's store and
     generates SKUs for any variant that is missing one.
@@ -61,6 +61,8 @@ def generate_skus(self, job_id: str, tenant_id: str):
                     break
 
                 for product in products:
+                    if product_ids and str(product["id"]) not in product_ids:
+                        continue
                     for variant in product.get("variants", []):
                         if variant.get("sku"):
                             skipped += 1

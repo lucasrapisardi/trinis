@@ -19,7 +19,7 @@ settings = get_settings()
 
 
 @celery_app.task(bind=True, base=JobTask, queue="sync", max_retries=3)
-def update_tags(self, job_id: str, tenant_id: str, keywords: list[str] | None = None):
+def update_tags(self, job_id: str, tenant_id: str, keywords: list[str] | None = None, product_ids: list[str] | None = None):
     """
     Generates and applies SEO tags to all products in the tenant's store.
     Optionally accepts a list of seed keywords to match against.
@@ -58,6 +58,8 @@ def update_tags(self, job_id: str, tenant_id: str, keywords: list[str] | None = 
                     break
 
                 for product in products:
+                    if product_ids and str(product["node"]["legacyResourceId"] if "node" in product else product.get("id","")) not in product_ids:
+                        continue
                     new_tags = _generate_tags(
                         title=product["title"],
                         vendor=product.get("vendor", ""),

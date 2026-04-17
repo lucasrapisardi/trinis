@@ -51,7 +51,7 @@ export default function NewJobPage() {
         product_limit: limitType === "custom" ? productLimit : null,
         scheduled_at: scheduleType === "later" ? new Date(scheduledAt).toISOString() : null,
       };
-      const r = await jobsApi.create(payload.vendor_config_id, payload.store_id);
+      const r = await jobsApi.create(payload.vendor_config_id, payload.store_id, payload.product_limit, payload.scheduled_at);
       toast.success(scheduleType === "now" ? "Sync job queued!" : `Job scheduled for ${new Date(scheduledAt).toLocaleString()}`);
       router.push(`/jobs/${r.data.id}`);
     } catch (err: unknown) {

@@ -97,6 +97,25 @@ def push_to_shopify(self, job_id: str, tenant_id: str, products: list[dict]):
             else:
                 ctx.finish()
 
+            # Chain post-processing tasks
+            if pushed > 0:
+                ctx.log("info", f"Starting post-processing for {len(pushed_shopify_ids)} products: SKU → Tags → Pricing")
+                from app.tasks.sku import generate_skus
+                from app.tasks.tags import update_tags
+                from app.tasks.pricing import update_prices
+                generate_skus.apply_async(
+                    args=[job_id, tenant_id, pushed_shopify_ids],
+                    queue="sync",
+                )
+                update_tags.apply_async(
+                    args=[job_id, tenant_id, None, pushed_shopify_ids],
+                    queue="sync",
+                )
+                update_prices.apply_async(
+                    args=[job_id, tenant_id, pushed_shopify_ids],
+                    queue="sync",
+                )
+
         except Exception as e:
             ctx.fail(str(e))
             raise self.retry(exc=e, countdown=60)
