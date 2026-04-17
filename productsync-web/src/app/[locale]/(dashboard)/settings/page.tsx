@@ -378,6 +378,7 @@ function TeamTab() {
 
 
 export default function SettingsPage() {
+  const t = useTranslations("settings");
   const [tab, setTab] = useState<Tab>(() => {
     if (typeof window !== "undefined" && window.location.search.includes("cancel=1")) return "cancel";
     return "vendors";

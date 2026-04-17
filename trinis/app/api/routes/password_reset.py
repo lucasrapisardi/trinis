@@ -68,6 +68,7 @@ async def forgot_password(
             to_email=user.email,
             reset_url=reset_url,
             user_name=user.full_name,
+            locale=getattr(user, "locale", "en"),
         )
 
     # Always return 200 — don't reveal if email exists
@@ -153,6 +154,7 @@ async def resend_confirmation(
             to_email=user.email,
             confirm_url=confirm_url,
             user_name=user.full_name,
+            locale=getattr(user, "locale", "en"),
         )
 
     return {"message": "If your email is registered and unconfirmed, a new link has been sent."}

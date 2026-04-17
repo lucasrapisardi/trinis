@@ -67,6 +67,7 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
         full_name=payload.full_name,
         is_owner=True,
         email_confirmed=False,
+        locale=payload.locale,
     )
     db.add(user)
     await db.flush()
@@ -149,3 +150,17 @@ async def me(current_user: User = Depends(get_current_user)):
         "tenant_id": str(current_user.tenant_id),
         "is_owner": current_user.is_owner,
     }
+
+
+@router.put("/locale")
+async def update_locale(
+    locale: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update the user's preferred locale."""
+    if locale not in ("en", "pt", "es"):
+        raise HTTPException(status_code=400, detail="Invalid locale. Use: en, pt, es")
+    current_user.locale = locale
+    await db.flush()
+    return {"locale": locale}

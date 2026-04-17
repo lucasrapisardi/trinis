@@ -55,7 +55,14 @@ def upgrade_images(self, job_id: str, tenant_id: str, products: list[dict]):
                 return
 
             client = OpenAI(api_key=settings.openai_api_key)
-            image_prompt = config.image_style_prompt or DEFAULT_IMAGE_PROMPT
+            # Get tenant locale
+            from app.models.models import User
+            from sqlalchemy import select as sa_select
+            owner = ctx.db.execute(
+                sa_select(User).where(User.tenant_id == job.tenant_id, User.is_owner == True)
+            ).scalar_one_or_none()
+            locale = getattr(owner, "locale", "pt") if owner else "pt"
+            image_prompt = config.image_style_prompt or _default_image_prompt(locale)
 
             ctx.log("info", f"Upgrading images for {len(products)} products...")
 

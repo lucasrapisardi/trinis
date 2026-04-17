@@ -13,6 +13,7 @@ class RegisterRequest(BaseModel):
     password: str
     full_name: str
     workspace_name: str
+    locale: str = "en"
 
     @field_validator("password")
     @classmethod
