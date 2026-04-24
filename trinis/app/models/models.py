@@ -252,6 +252,7 @@ class Job(Base):
     attempt: Mapped[int] = mapped_column(Integer, default=1)
 
     product_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    skip_existing: Mapped[bool] = mapped_column(Boolean, default=False)
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     error_message: Mapped[str | None] = mapped_column(Text)
