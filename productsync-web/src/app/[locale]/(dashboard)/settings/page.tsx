@@ -676,7 +676,7 @@ export default function SettingsPage() {
                 { label: "A cada hora",          cron: "0 * * * *" },
               ].map(({ label, cron }) => (
                 <div key={cron} className="flex items-center justify-between p-2.5 border border-gray-100 rounded-lg text-xs">
-                  <span className="text-gray-600">{t(`tabs.${id}`)}</span>
+                  <span className="text-gray-600">{label}</span>
                   <span className="font-mono text-gray-400 text-[10px] bg-gray-50 px-2 py-0.5 rounded">{cron}</span>
                 </div>
               ))}
