@@ -68,6 +68,8 @@ async def list_products(
 
         except Exception as e:
             print(f"⚠️ Failed to fetch products from {store.shop_domain}: {e}")
+            import traceback; traceback.print_exc()
             continue
 
+    print(f">>> products found: {len(all_products)}")
     return all_products

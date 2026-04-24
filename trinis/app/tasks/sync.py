@@ -17,6 +17,7 @@ from app.tasks.base import JobTask, SyncSession
 from app.models.models import VendorConfig, ShopifyStore
 from app.core.config import get_settings
 from app.core.encryption import decrypt_token
+from app.services.ean_cache import set_cached
 
 settings = get_settings()
 
@@ -51,11 +52,13 @@ def push_to_shopify(self, job_id: str, tenant_id: str, products: list[dict]):
             ctx.log("info", f"Pushing {len(products)} products to {shop_url}")
 
             pushed, failed = 0, 0
+            store_id = str(store.id)
+            pushed_shopify_ids = []
 
             for i, product in enumerate(products):
                 ctx.log("info", f"Syncing [{i+1}/{len(products)}]: {product['nome']}")
                 try:
-                    _upsert_product(
+                    shopify_product_id = _upsert_product(
                         product=product,
                         shop_url=shop_url,
                         api_version=api_version,
@@ -64,6 +67,13 @@ def push_to_shopify(self, job_id: str, tenant_id: str, products: list[dict]):
                         ctx=ctx,
                     )
                     pushed += 1
+                    pushed_shopify_ids.append(str(shopify_product_id))
+                    # Cache EAN for future re-sync skip
+                    set_cached(tenant_id, store_id, product["ean"], {
+                        "image_hash": product.get("image_hash"),
+                        "minio_keys": product.get("minio_keys", []),
+                        "enriched_description": product.get("enriched_description", ""),
+                    })
                 except Exception as e:
                     ctx.log("error", f"Failed to sync {product['nome']}: {e}")
                     failed += 1
@@ -187,6 +197,7 @@ def _upsert_product(
     upgraded_images = product.get("upgraded_images", [])
     if upgraded_images:
         _upload_images(shopify_product_id, upgraded_images, base_url, headers, ctx)
+    return shopify_product_id
 
 
 def _find_product_by_ean(ean: str, base_url: str, headers: dict) -> str | None:

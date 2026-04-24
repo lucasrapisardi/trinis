@@ -27,6 +27,23 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled:       "badge badge-cancelled",
 };
 
+
+function friendlyError(msg: string | null): string {
+  if (!msg) return "";
+  if (msg.includes("commit()") || msg.includes("SQLAlchemy") || msg.includes("SessionTransaction"))
+    return "An internal processing error occurred. Please retry the job.";
+  if (msg.includes("OpenAI") || msg.includes("openai"))
+    return "AI enrichment service is temporarily unavailable. Please retry.";
+  if (msg.includes("MinIO") || msg.includes("endpoint URL"))
+    return "Image storage service is unavailable. Images were not upgraded.";
+  if (msg.includes("Shopify") || msg.includes("shopify"))
+    return "Failed to connect to Shopify. Please check your store connection.";
+  if (msg.includes("timeout") || msg.includes("Connection"))
+    return "Connection timeout. Please check your internet connection and retry.";
+  return msg;
+}
+
+
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: session } = useSession();
@@ -207,7 +224,7 @@ export default function JobDetailPage() {
       {/* Error */}
       {job.error_message && (
         <div className="bg-red-50 border border-red-100 rounded-lg px-3 py-2.5 text-xs text-red-700">
-          {job.error_message}
+          {friendlyError(job.error_message)}
         </div>
       )}
 

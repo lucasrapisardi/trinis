@@ -1,10 +1,12 @@
+# PATH: /home/lumoura/trinis_ai/trinis/app/tasks/scrape.py
 """
-Scrape task — refactored from scraper.py
+Scrape task — parallel product detail fetching using ThreadPoolExecutor.
 
-Scrapes product listings from a vendor (e.g. Comercial Gomes),
-stores raw data per EAN, and chains into the enrich task.
-Respects scrape_scope (categoria / subcategoria / pagina) and product_limit.
+Fetches product listing pages sequentially (to respect pagination),
+but fetches individual product detail pages in parallel for ~5x speedup.
 """
+import concurrent.futures
+import hashlib
 import os
 import re
 import uuid
@@ -17,13 +19,12 @@ from app.tasks.celery_app import celery_app
 from app.tasks.base import JobTask, SyncSession
 from app.models.models import VendorConfig
 
+# Max parallel detail page fetches
+MAX_SCRAPE_WORKERS = 8
+
 
 @celery_app.task(bind=True, base=JobTask, queue="scrape", max_retries=3)
 def scrape_vendor(self, job_id: str, tenant_id: str):
-    """
-    Scrapes all products from the configured vendor URL.
-    Respects scrape_scope and product_limit from the job record.
-    """
     with self.job_context(job_id) as ctx:
         try:
             db = ctx.db
@@ -34,11 +35,11 @@ def scrape_vendor(self, job_id: str, tenant_id: str):
                 ctx.fail("VendorConfig not found")
                 return
 
-            product_limit = job.product_limit  # None = unlimited
+            product_limit = job.product_limit
             scope = getattr(config, "scrape_scope", "pagina")
 
             ctx.log("info", f"Starting scrape: {config.name}")
-            ctx.log("info", f"Scope: {scope} | Limit: {product_limit or 'all'}")
+            ctx.log("info", f"Scope: {scope} | Limit: {product_limit or 'all'} | Workers: {MAX_SCRAPE_WORKERS}")
             ctx.log("info", f"Target: {config.base_url}")
 
             products = _scrape_all_pages(config, ctx, scope=scope, limit=product_limit)
@@ -63,48 +64,30 @@ def _scrape_all_pages(
     scope: str = "pagina",
     limit: int | None = None,
 ) -> list[dict]:
-    """
-    Paginate through the vendor listing API and collect raw product data.
-
-    scope:
-      - "categoria"    → scrape all subcategories under the categoria
-      - "subcategoria" → scrape all pages under categoria/subcategoria
-      - "pagina"       → scrape only the specific pagina_especifica (default)
-
-    limit: max number of products to collect (None = all)
-    """
     url_base = "https://www.comercialgomes.com.br/handlers/departamento/SubCategoriaResult.ashx"
     qtde_por_pagina = 26
-    all_products = []
 
-    # Build the API params based on scope
     if scope == "categoria":
-        # Scrape everything under the categoria — leave subcategoria empty
         categoria_api = config.categoria or ""
         subcategoria_api = ""
-        pagina_api = ""
     elif scope == "subcategoria":
-        # Scrape all pages under categoria/subcategoria
         categoria_api = config.subcategoria or ""
         subcategoria_api = config.pagina_especifica or ""
-        pagina_api = ""
     else:
-        # "pagina" — scrape the specific page (original behaviour)
         categoria_api = config.subcategoria or ""
         subcategoria_api = config.pagina_especifica or ""
-        pagina_api = config.pagina_especifica or ""
 
     listagem_url = _build_listing_url(config, scope)
     ctx.log("info", f"Listing URL: {listagem_url}")
 
+    # Collect all raw listing items first
+    raw_items = []
     pagina = 1
     while True:
-        if limit and len(all_products) >= limit:
-            ctx.log("info", f"Product limit ({limit}) reached — stopping scrape")
+        if limit and len(raw_items) >= limit:
             break
 
         ctx.log("info", f"Fetching page {pagina}...")
-
         params = {
             "subcategoria": subcategoria_api,
             "categoria": categoria_api,
@@ -116,7 +99,6 @@ def _scrape_all_pages(
             "atributoitemID": "",
             "URL": listagem_url,
         }
-
         try:
             resp = requests.get(
                 url_base, params=params, timeout=20,
@@ -129,37 +111,45 @@ def _scrape_all_pages(
             break
 
         if not data:
-            ctx.log("info", "No more products — pagination complete")
             break
 
         for item in data:
-            if limit and len(all_products) >= limit:
+            if limit and len(raw_items) >= limit:
                 break
-            product = _scrape_product_detail(item, ctx)
-            if product:
-                all_products.append(product)
+            raw_items.append(item)
 
         pagina += 1
+
+    ctx.log("info", f"Found {len(raw_items)} items — fetching details in parallel...")
+
+    # Fetch product details in parallel
+    all_products = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_SCRAPE_WORKERS) as executor:
+        futures = {executor.submit(_scrape_product_detail, item, ctx): item for item in raw_items}
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                product = future.result()
+                if product:
+                    all_products.append(product)
+            except Exception as e:
+                ctx.log("warn", f"Detail fetch error: {e}")
 
     return all_products
 
 
 def _build_listing_url(config: VendorConfig, scope: str = "pagina") -> str:
     base = "https://www.comercialgomes.com.br/"
-
     if scope == "categoria":
         parts = [p for p in [config.categoria] if p]
     elif scope == "subcategoria":
         parts = [p for p in [config.categoria, config.subcategoria] if p]
     else:
         parts = [p for p in [config.categoria, config.subcategoria, config.pagina_especifica] if p]
-
     path = "/".join(parts) + ".html" if parts else ""
     return urljoin(base, path)
 
 
 def _scrape_product_detail(item: dict, ctx) -> dict | None:
-    """Fetch the product detail page and extract all fields."""
     nome = item.get("nome", "").strip().replace("/", "-")
     link = item.get("url", "")
     preco = item.get("preco_consumidor", "")
@@ -194,6 +184,9 @@ def _scrape_product_detail(item: dict, ctx) -> dict | None:
         return None
 
     images = _collect_image_urls(img, ean)
+    # Compute image hash for change detection (used by image task to skip unchanged)
+    image_hash = _hash_url(images[0]) if images else None
+
     ctx.log("info", f"Scraped: {nome} (EAN: {ean})")
 
     return {
@@ -204,6 +197,7 @@ def _scrape_product_detail(item: dict, ctx) -> dict | None:
         "descricao": descricao,
         "ficha_tecnica": ficha,
         "images": images,
+        "image_hash": image_hash,
     }
 
 
@@ -238,3 +232,8 @@ def _collect_image_urls(img_url: str, ean: str) -> list[str]:
             deduped.append(u)
 
     return deduped
+
+
+def _hash_url(url: str) -> str:
+    """Simple hash of URL for change detection."""
+    return hashlib.md5(url.encode()).hexdigest()[:16]
