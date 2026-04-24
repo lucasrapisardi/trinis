@@ -136,6 +136,7 @@ class JobCreate(BaseModel):
     store_id: uuid.UUID
     product_limit: int | None = None      # None = all products
     scheduled_at: datetime | None = None  # None = run immediately
+    skip_existing: bool = False
 
 
 class JobOut(BaseModel):

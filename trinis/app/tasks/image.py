@@ -50,6 +50,7 @@ def upgrade_images(self, job_id: str, tenant_id: str, products: list[dict]):
             store_id = str(store_result.id) if store_result else "unknown"
 
             image_prompt = config.image_style_prompt or _default_image_prompt(locale)
+            skip_existing = getattr(job, "skip_existing", False)
             total = len(products)
 
             ctx.log("info", f"Upgrading images for {total} products (parallel={MAX_WORKERS}, hash-skip enabled)...")
@@ -64,8 +65,8 @@ def upgrade_images(self, job_id: str, tenant_id: str, products: list[dict]):
                 ean = product.get("ean", "")
                 image_hash = product.get("image_hash")
 
-                # Hash skip
-                if image_hash:
+                # Hash skip — only if skip_existing is enabled
+                if skip_existing and image_hash:
                     cached = get_cached(tenant_id, store_id, ean)
                     if cached and cached.get("image_hash") == image_hash and cached.get("minio_keys"):
                         log_queue.put(("info", f"  ⏭ Skipped [{i+1}/{total}] {product['nome'][:40]} (image unchanged)"))

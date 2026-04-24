@@ -55,6 +55,8 @@ def enrich_products(self, job_id: str, tenant_id: str, products: list[dict]):
             ).scalar_one_or_none()
             store_id = str(store_result.id) if store_result else "unknown"
 
+            skip_existing = getattr(job, "skip_existing", False)
+
             system_prompt = config.brand_prompt or _default_brand_prompt(
                 config.brand_name or "", locale=locale
             )
@@ -66,7 +68,7 @@ def enrich_products(self, job_id: str, tenant_id: str, products: list[dict]):
             to_enrich = []
             for product in products:
                 cached = get_cached(tenant_id, store_id, product["ean"])
-                if cached and cached.get("enriched_description"):
+                if skip_existing and cached and cached.get("enriched_description"):
                     product["enriched_description"] = cached["enriched_description"]
                     product["price_multiplier"] = config.price_multiplier
                     product["_from_cache"] = True

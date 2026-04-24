@@ -146,9 +146,11 @@ async def create_job(
         status=JobStatus.queued,
         product_limit=payload.product_limit,
         scheduled_at=payload.scheduled_at,
+        skip_existing=payload.skip_existing,
     )
     db.add(job)
     await db.flush()
+    await db.commit()
 
     # Enqueue Celery task — with ETA if scheduled
     from app.tasks.scrape import scrape_vendor
@@ -192,6 +194,7 @@ async def retry_job(
     )
     db.add(new_job)
     await db.flush()
+    await db.commit()
 
     from app.tasks.scrape import scrape_vendor
     task = scrape_vendor.apply_async(
