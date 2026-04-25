@@ -14,8 +14,8 @@ const PLANS = [
     name: "free" as PlanName,
     label: "Free",
     price: "$0",
-    features: ["100 produtos / mês", "1 loja", "Sincronização manual"],
-    limit: 100,
+    features: ["10 produtos / mês", "1 loja", "Sincronização manual"],
+    limit: 10,
   },
   {
     name: "starter" as PlanName,

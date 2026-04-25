@@ -24,11 +24,19 @@ export default function NewJobPage() {
   const [limitType, setLimitType] = useState<LimitType | null>(null);
   const [productLimit, setProductLimit] = useState(50);
   const [loading, setLoading] = useState(false);
+  const [planJobLimit, setPlanJobLimit] = useState<number | null>(null);
   const [skipExisting, setSkipExisting] = useState(true);
   const t = useTranslations("jobs");
   const [workersOnline, setWorkersOnline] = useState<boolean | null>(null);
 
   const selectedVendor = vendors.find((v) => v.id === vendorId);
+
+  useEffect(() => {
+    api.get("/tenant").then((r) => {
+      const limits: Record<string, number | null> = { free: 10, starter: 50, pro: null, business: null };
+      setPlanJobLimit(limits[r.data.plan] ?? null);
+    }).catch(() => null);
+  }, []);
 
   useEffect(() => {
     vendorApi.list().then((r) => setVendors(r.data)).catch(() => null);
@@ -138,7 +146,12 @@ export default function NewJobPage() {
                 Custom limit
               </button>
             </div>
-            {limitType === "custom" && (
+            {limitType === "custom" && planJobLimit && (
+                <p className="text-[10px] text-amber-600 mt-1">
+                  Your plan allows up to {planJobLimit} products per job.
+                </p>
+              )}
+              {limitType === "custom" && (
               <div className="flex items-center gap-2">
                 <input
                   type="number"

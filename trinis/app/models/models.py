@@ -82,7 +82,7 @@ class Tenant(Base):
     @property
     def plan_limit(self) -> int:
         limits = {
-            PlanName.free: 100,
+            PlanName.free: 2,
             PlanName.starter: 300,
             PlanName.pro: 1000,
             PlanName.business: 10000,
@@ -331,3 +331,49 @@ class AuditLog(Base):
 
     def __repr__(self) -> str:
         return f"<AuditLog {self.action} by {self.user_id}>"
+
+
+# ─────────────────────────────────────────────
+# Backup Add-on
+# ─────────────────────────────────────────────
+
+import enum as _enum
+
+class BackupPlanName(str, _enum.Enum):
+    basic    = "basic"      # +$9/mo  — manual only, 7 days, 5 snapshots
+    standard = "standard"   # +$19/mo — manual + daily, 30 days, 30 snapshots
+    premium  = "premium"    # +$39/mo — manual + daily, 90 days, unlimited
+
+class BackupStatus(str, _enum.Enum):
+    pending   = "pending"
+    running   = "running"
+    done      = "done"
+    failed    = "failed"
+
+class BackupSubscription(Base):
+    """Tracks which tenants have the backup add-on active."""
+    __tablename__ = "backup_subscriptions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), unique=True, index=True)
+    plan: Mapped[str] = mapped_column(String(20), default="basic")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    stripe_subscription_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    next_auto_backup_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+class BackupSnapshot(Base):
+    """Metadata for each backup snapshot."""
+    __tablename__ = "backup_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    store_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("shopify_stores.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    trigger: Mapped[str] = mapped_column(String(20), default="manual")  # manual | auto
+    product_count: Mapped[int] = mapped_column(Integer, default=0)
+    file_size_bytes: Mapped[int] = mapped_column(Integer, default=0)
+    minio_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

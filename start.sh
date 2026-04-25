@@ -4,7 +4,7 @@ echo "🚀 Starting ProductSync dev environment..."
 # Infrastructure
 sudo service postgresql start
 sudo service redis start
-cd ~/trinis_ai/trinis && docker-compose up minio -d
+cd ~/trinis_ai && docker-compose up minio -d
 echo "✅ PostgreSQL + Redis + MinIO started"
 
 echo ""

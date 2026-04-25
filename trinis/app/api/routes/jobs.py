@@ -144,7 +144,7 @@ async def create_job(
         vendor_config_id=payload.vendor_config_id,
         store_id=payload.store_id,
         status=JobStatus.queued,
-        product_limit=payload.product_limit,
+        product_limit=_apply_job_limit(payload.product_limit, tenant.plan.value),
         scheduled_at=payload.scheduled_at,
         skip_existing=payload.skip_existing,
     )

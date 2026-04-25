@@ -22,7 +22,8 @@
     "stores": "Stores",
     "billing": "Billing",
     "settings": "Settings",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "backup": "Backup"
   },
   "auth": {
     "signIn": "Sign in",

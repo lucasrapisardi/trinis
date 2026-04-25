@@ -22,7 +22,8 @@
     "stores": "Tiendas",
     "billing": "Facturación",
     "settings": "Configuración",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "backup": "Backup"
   },
   "auth": {
     "signIn": "Iniciar sesión",

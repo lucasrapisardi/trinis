@@ -24,6 +24,19 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Auto logout on 401
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      const { signOut } = await import("next-auth/react");
+      await signOut({ callbackUrl: `/${window.location.pathname.split("/")[1]}/login` });
+    }
+    return Promise.reject(error);
+  }
+);
+
+
 // ── Auth ──────────────────────────────────────────────────────────────────
 export const authApi = {
   login: (email: string, password: string) =>

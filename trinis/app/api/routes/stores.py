@@ -50,11 +50,40 @@ async def initiate_oauth(
     shop_domain: str,
     current_user: User = Depends(get_current_user),
     tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
 ):
+    # Sanitize shop domain - remove protocol, slashes, etc
     shop = shop_domain.lower().strip()
+    shop = shop.replace("https://", "").replace("http://", "").strip("/")
+    shop = shop.split("/")[0]  # remove any path
     if not shop.endswith(".myshopify.com"):
         shop = f"{shop}.myshopify.com"
 
+
+    # Store limit check
+    from sqlalchemy import select as sa_select, func
+    active_count_result = await db.execute(
+        sa_select(func.count(ShopifyStore.id)).where(
+            ShopifyStore.tenant_id == tenant.id,
+            ShopifyStore.is_active == True,
+        )
+    )
+    active_count = active_count_result.scalar()
+    store_limits = {"free": 1, "starter": 2, "pro": 5, "business": 999, "cancelled": 0}
+    store_limit = store_limits.get(tenant.plan.value, 1)
+    existing_result = await db.execute(
+        sa_select(ShopifyStore).where(
+            ShopifyStore.tenant_id == tenant.id,
+            ShopifyStore.shop_domain == shop,
+        )
+    )
+    existing_store = existing_result.scalar_one_or_none()
+    is_reconnect = existing_store is not None and not existing_store.is_active
+    if not is_reconnect and active_count >= store_limit:
+        raise HTTPException(
+            status_code=402,
+            detail={"code": "store_limit_reached", "message": f"Your plan allows up to {store_limit} store(s). Upgrade to connect more.", "upgrade_url": "/billing"},
+        )
     state = secrets.token_urlsafe(32)
     redis = _get_redis()
     await redis.setex(

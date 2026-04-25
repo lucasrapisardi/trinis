@@ -22,7 +22,8 @@
     "stores": "Lojas",
     "billing": "Cobrança",
     "settings": "Configurações",
-    "signOut": "Sair"
+    "signOut": "Sair",
+    "backup": "Backup"
   },
   "auth": {
     "signIn": "Entrar",

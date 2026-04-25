@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     stripe_starter_price_id: str = ""
     stripe_pro_price_id: str = ""
     stripe_business_price_id: str = ""
+    stripe_backup_basic_price_id: str = ""
+    stripe_backup_standard_price_id: str = ""
+    stripe_backup_premium_price_id: str = ""
 
     # ── Resend (email service) ────────────────────────
     resend_api_key: str = ""

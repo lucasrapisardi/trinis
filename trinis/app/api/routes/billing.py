@@ -108,11 +108,31 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         return result.scalar_one_or_none()
 
     if event_type == "checkout.session.completed":
-        tenant = await _get_tenant_by_customer(data["customer"])
-        if tenant:
-            new_plan = data.get("metadata", {}).get("plan", "pro")
-            tenant.plan = PlanName(new_plan)
-            tenant.stripe_subscription_id = data.get("subscription")
+        metadata = data.get("metadata", {})
+        # Handle backup addon checkout
+        if metadata.get("type") == "backup_addon":
+            tenant_id = metadata.get("tenant_id")
+            backup_plan = metadata.get("backup_plan")
+            stripe_sub_id = data.get("subscription")
+            if tenant_id and backup_plan:
+                from app.models.models import BackupSubscription
+                t_result = await db.execute(select(Tenant).where(Tenant.id == uuid.UUID(tenant_id)))
+                t = t_result.scalar_one_or_none()
+                if t:
+                    sub_result = await db.execute(select(BackupSubscription).where(BackupSubscription.tenant_id == t.id))
+                    sub = sub_result.scalar_one_or_none()
+                    if sub:
+                        sub.plan = backup_plan
+                        sub.is_active = True
+                        sub.stripe_subscription_id = stripe_sub_id
+                    else:
+                        db.add(BackupSubscription(tenant_id=t.id, plan=backup_plan, is_active=True, stripe_subscription_id=stripe_sub_id))
+        else:
+            tenant = await _get_tenant_by_customer(data["customer"])
+            if tenant:
+                new_plan = metadata.get("plan", "pro")
+                tenant.plan = PlanName(new_plan)
+                tenant.stripe_subscription_id = data.get("subscription")
 
     elif event_type == "customer.subscription.updated":
         tenant = await _get_tenant_by_customer(data["customer"])
@@ -121,10 +141,22 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             tenant.plan = PRICE_PLAN_MAP.get(price_id, PlanName.free)
 
     elif event_type == "customer.subscription.deleted":
-        tenant = await _get_tenant_by_customer(data["customer"])
-        if tenant:
-            tenant.plan = PlanName.free
-            tenant.stripe_subscription_id = None
+        # Check if it's a backup addon subscription
+        from app.models.models import BackupSubscription
+        backup_result = await db.execute(
+            select(BackupSubscription).where(
+                BackupSubscription.stripe_subscription_id == data["id"]
+            )
+        )
+        backup_sub = backup_result.scalar_one_or_none()
+        if backup_sub:
+            backup_sub.is_active = False
+            backup_sub.stripe_subscription_id = None
+        else:
+            tenant = await _get_tenant_by_customer(data["customer"])
+            if tenant:
+                tenant.plan = PlanName.free
+                tenant.stripe_subscription_id = None
 
     elif event_type == "invoice.payment_failed":
         tenant = await _get_tenant_by_customer(data["customer"])

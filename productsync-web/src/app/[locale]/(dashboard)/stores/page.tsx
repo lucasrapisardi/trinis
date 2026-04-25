@@ -13,6 +13,10 @@ export default function StoresPage() {
   const [stores, setStores] = useState<ShopifyStore[]>([]);
   const [domain, setDomain] = useState("");
   const [connecting, setConnecting] = useState(false);
+  const [limitError, setLimitError] = useState(false);
+  const [tenant, setTenant] = useState<any>(null);
+  const storeLimits: Record<string, number> = { free: 1, starter: 2, pro: 5, business: 999 };
+  const atLimit = tenant ? stores.filter((s: any) => s.is_active).length >= (storeLimits[tenant.plan] ?? 1) : false;
   const t = useTranslations("stores");
   const [runningTask, setRunningTask] = useState<string | null>(null);
 
@@ -26,6 +30,20 @@ export default function StoresPage() {
         toast.error(detail.message || "Store limit reached for your plan. Upgrade to connect more stores.");
       } else {
         toast.error(typeof detail === "string" ? detail : "Failed to reconnect store");
+      }
+    }
+  }
+
+  async function handleReconnect(shopDomain: string) {
+    try {
+      const r = await api.post("/stores/connect", null, { params: { shop_domain: shopDomain } });
+      if (r.data.redirect_url) window.location.href = r.data.redirect_url;
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: { code?: string; message?: string } | string } } })?.response?.data?.detail;
+      if (typeof detail === "object" && detail?.code === "store_limit_reached") {
+        toast.error(detail.message || "Store limit reached. Upgrade to connect more stores.");
+      } else {
+        toast.error("Failed to reconnect store");
       }
     }
   }
@@ -44,14 +62,26 @@ export default function StoresPage() {
 
   useEffect(() => {
     storesApi.list().then((r) => setStores(r.data)).catch(() => null);
+    api.get("/tenant").then((r) => {
+      setTenant(r.data);
+      const storeLimits: Record<string, number> = { free: 1, starter: 2, pro: 5, business: 999 };
+      const limit = storeLimits[r.data.plan] ?? 1;
+      // will be checked after stores load
+    }).catch(() => null);
   }, []);
 
   async function handleConnect(e: React.FormEvent) {
     e.preventDefault();
     if (!domain) return;
     setConnecting(true);
+    // Sanitize domain
+    const cleanDomain = domain
+      .replace(/https?:\/\//, "")
+      .replace(/\.myshopify\.com.*$/, "")
+      .replace(/\/$/, "")
+      .trim();
     try {
-      const r = await storesApi.initiateOAuth(domain);
+      const r = await storesApi.initiateOAuth(cleanDomain);
       // Redirect to Shopify OAuth
       window.location.href = r.data.redirect_url;
     } catch {
@@ -80,7 +110,25 @@ export default function StoresPage() {
         <h2 className="text-xs font-medium text-gray-700 mb-3">
           Connect a new store
         </h2>
-        <form onSubmit={handleConnect} className="flex gap-2">
+        {(() => {
+          const storeLimits: Record<string, number> = { free: 1, starter: 2, pro: 5, business: 999 };
+          const limit = tenant ? (storeLimits[tenant.plan] ?? 1) : 999;
+          const activeStores = stores.filter((s: any) => s.is_active).length;
+          if (activeStores >= limit) return (
+            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+              <span className="text-amber-500 text-lg flex-shrink-0">⚠️</span>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-gray-800">Store limit reached</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Your {tenant?.plan} plan allows up to {limit} store(s). Upgrade to connect more.</p>
+                <a href="/billing" className="inline-block mt-2 text-xs font-medium text-white bg-brand-600 px-3 py-1.5 rounded-lg hover:bg-brand-700 transition-colors">
+                  Upgrade plan →
+                </a>
+              </div>
+            </div>
+          );
+          return null;
+        })()}
+        <form onSubmit={handleConnect} className={clsx("flex gap-2 transition-opacity", atLimit && "opacity-40 pointer-events-none select-none")}>
           <div className="flex flex-1 items-center border border-gray-200 rounded-lg overflow-hidden">
             <input
               className="flex-1 h-9 px-3 text-sm outline-none bg-white"

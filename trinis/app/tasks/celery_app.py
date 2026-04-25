@@ -17,6 +17,7 @@ celery_app = Celery(
         "app.tasks.tags",
         "app.tasks.pricing",
         "app.tasks.maintenance",
+        "app.tasks.backup",
     ],
 )
 
@@ -42,6 +43,7 @@ celery_app.conf.update(
         "app.tasks.tags.*":        {"queue": "sync"},
         "app.tasks.pricing.*":     {"queue": "sync"},
         "app.tasks.maintenance.*": {"queue": "default"},
+        "app.tasks.backup.*":     {"queue": "default"},
     },
 
     # Retry defaults
