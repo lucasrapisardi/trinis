@@ -16,6 +16,20 @@ export default function StoresPage() {
   const t = useTranslations("stores");
   const [runningTask, setRunningTask] = useState<string | null>(null);
 
+  async function handleReconnect(shopDomain: string) {
+    try {
+      const r = await api.post("/stores/connect", null, { params: { shop_domain: shopDomain } });
+      window.location.href = r.data.oauth_url;
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: { code?: string; message?: string } | string } } })?.response?.data?.detail;
+      if (typeof detail === "object" && detail?.code === "store_limit_reached") {
+        toast.error(detail.message || "Store limit reached for your plan. Upgrade to connect more stores.");
+      } else {
+        toast.error(typeof detail === "string" ? detail : "Failed to reconnect store");
+      }
+    }
+  }
+
   async function handleRunTask(storeId: string, task: string) {
     setRunningTask(`${storeId}-${task}`);
     try {
@@ -128,38 +142,29 @@ export default function StoresPage() {
                 ) : (
                   <span className="text-amber-500">webhooks pending</span>
                 )}
-                <div className="flex gap-1">
+                {store.is_active ? (
+                  <div className="flex gap-1">
+                    <button onClick={() => handleRunTask(store.id, "sku")} disabled={runningTask === `${store.id}-sku`} className="btn text-[10px] py-0.5 px-2" title="Generate SKUs">
+                      {runningTask === `${store.id}-sku` ? "…" : "SKU"}
+                    </button>
+                    <button onClick={() => handleRunTask(store.id, "tags")} disabled={runningTask === `${store.id}-tags`} className="btn text-[10px] py-0.5 px-2" title="Update tags">
+                      {runningTask === `${store.id}-tags` ? "…" : "Tags"}
+                    </button>
+                    <button onClick={() => handleRunTask(store.id, "pricing")} disabled={runningTask === `${store.id}-pricing`} className="btn text-[10px] py-0.5 px-2" title="Recalculate prices">
+                      {runningTask === `${store.id}-pricing` ? "…" : "Pricing"}
+                    </button>
+                    <button onClick={() => handleDisconnect(store.id, store.shop_domain)} className="btn btn-danger text-[10px] py-0.5 px-2">
+                      Disconnect
+                    </button>
+                  </div>
+                ) : (
                   <button
-                    onClick={() => handleRunTask(store.id, "sku")}
-                    disabled={runningTask === `${store.id}-sku`}
-                    className="btn text-[10px] py-0.5 px-2"
-                    title="Generate SKUs for all products"
+                    onClick={() => handleReconnect(store.shop_domain)}
+                    className="btn text-[10px] py-0.5 px-2 text-brand-600"
                   >
-                    {runningTask === `${store.id}-sku` ? "…" : "SKU"}
+                    Reconnect →
                   </button>
-                  <button
-                    onClick={() => handleRunTask(store.id, "tags")}
-                    disabled={runningTask === `${store.id}-tags`}
-                    className="btn text-[10px] py-0.5 px-2"
-                    title="Update tags for all products"
-                  >
-                    {runningTask === `${store.id}-tags` ? "…" : "Tags"}
-                  </button>
-                  <button
-                    onClick={() => handleRunTask(store.id, "pricing")}
-                    disabled={runningTask === `${store.id}-pricing`}
-                    className="btn text-[10px] py-0.5 px-2"
-                    title="Recalculate prices for all products"
-                  >
-                    {runningTask === `${store.id}-pricing` ? "…" : "Pricing"}
-                  </button>
-                  <button
-                    onClick={() => handleDisconnect(store.id, store.shop_domain)}
-                    className="btn btn-danger text-[10px] py-0.5 px-2"
-                  >
-                    Disconnect
-                  </button>
-                </div>
+                )}
               </div>
             </div>
           ))}
