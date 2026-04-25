@@ -1,6 +1,5 @@
 // PATH: src/app/(dashboard)/jobs/new/page.tsx
 "use client";
-import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,7 +9,6 @@ import api, { vendorApi, storesApi, jobsApi } from "@/lib/api";
 import type { VendorConfig, ShopifyStore } from "@/types";
 
 type ScheduleType = "now" | "later";
-type LimitType = "all" | "custom";
 type LimitType = "all" | "custom";
 
 export default function NewJobPage() {
@@ -25,7 +23,6 @@ export default function NewJobPage() {
   const [productLimit, setProductLimit] = useState(50);
   const [loading, setLoading] = useState(false);
   const [skipExisting, setSkipExisting] = useState(true);
-  const t = useTranslations("jobs");
   const [workersOnline, setWorkersOnline] = useState<boolean | null>(null);
 
   const selectedVendor = vendors.find((v) => v.id === vendorId);
@@ -55,7 +52,7 @@ export default function NewJobPage() {
         skip_existing: skipExisting,
         scheduled_at: scheduleType === "later" ? new Date(scheduledAt).toISOString() : null,
       };
-      const r = await jobsApi.create(payload.vendor_config_id, payload.store_id, payload.product_limit, payload.scheduled_at);
+      const r = await jobsApi.create(payload.vendor_config_id, payload.store_id);
       toast.success(scheduleType === "now" ? "Sync job queued!" : `Job scheduled for ${new Date(scheduledAt).toLocaleString()}`);
       router.push(`/jobs/${r.data.id}`);
     } catch (err: unknown) {
@@ -214,7 +211,7 @@ export default function NewJobPage() {
           </div>
 
           <button type="submit" disabled={loading || !vendorId || !storeId || !scheduleType || !limitType} className="btn btn-primary w-full justify-center text-sm">
-            {loading ? "Starting…" : scheduleType === "now" ? t("startSync") : t("scheduleSync")}
+            {loading ? "Starting…" : scheduleType === "now" ? "Start sync →" : "Schedule sync →"}
           </button>
         </form>
       </div>

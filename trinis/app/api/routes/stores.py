@@ -66,6 +66,7 @@ async def initiate_oauth(
 
     scopes = "read_products,write_products,read_inventory"
     redirect_uri = settings.shopify_callback_url or f"{settings.app_base_url}/api/stores/callback"
+    print(f">>> redirect_uri being sent to Shopify: {redirect_uri}")
 
     print(f">>> redirect_uri: {redirect_uri}")
 
@@ -231,7 +232,7 @@ async def run_store_task(
         select(ShopifyStore).where(
             ShopifyStore.id == store_id,
             ShopifyStore.tenant_id == tenant.id,
-            ShopifyStore.is_active == True,
+            # ShopifyStore.is_active == True,  # Show all stores including inactive
         )
     )
     store = result.scalar_one_or_none()

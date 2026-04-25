@@ -1,28 +1,31 @@
-import time
+# PATH: /home/lumoura/trinis_ai/trinis/app/api/routes/products.py
+"""
+Products route — fetches products from all active Shopify stores for the tenant.
+"""
+import re
+
 import requests
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.core.auth import get_current_tenant
-from app.core.encryption import decrypt_token
+from app.core.auth import get_current_user, get_current_tenant
 from app.core.config import get_settings
+from app.core.encryption import decrypt_token
 from app.db.session import get_db
-from app.models.models import Tenant, ShopifyStore
+from app.models.models import ShopifyStore, Tenant, User
 
+router = APIRouter(prefix="/products", tags=["products"])
 settings = get_settings()
-router = APIRouter(tags=["products"])
 
 
-@router.get("/products")
+@router.get("")
 async def list_products(
     tenant: Tenant = Depends(get_current_tenant),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Fetches products from all active Shopify stores for the current tenant.
-    Proxies the Shopify Admin API so the frontend doesn't need store credentials.
-    """
+    """Fetches products from all active Shopify stores for the current tenant."""
     result = await db.execute(
         select(ShopifyStore).where(
             ShopifyStore.tenant_id == tenant.id,
@@ -38,8 +41,7 @@ async def list_products(
             access_token = decrypt_token(store.encrypted_access_token)
             base_url = f"https://{store.shop_domain}/admin/api/{settings.shopify_api_version}"
             headers = {"X-Shopify-Access-Token": access_token}
-
-            params = {"limit": 250, "status": "any"}
+            params = {"limit": 250}
 
             while True:
                 resp = requests.get(
@@ -56,20 +58,18 @@ async def list_products(
                     p["shopify_id"] = str(p["id"])
                     all_products.append(p)
 
-                # Pagination
-                import re
+                # Pagination via Link header
                 link = resp.headers.get("Link", "")
                 if 'rel="next"' not in link:
                     break
-                m = re.search(r'page_info=([^&>]+)[^>]*>;\s*rel="next"', link)
-                if not m:
+
+                next_url = re.search(r'<([^>]+)>;\s*rel="next"', link)
+                if not next_url:
                     break
-                params = {"limit": 250, "page_info": m.group(1)}
+                params = {"page_info": next_url.group(1).split("page_info=")[-1], "limit": 250}
 
         except Exception as e:
             print(f"⚠️ Failed to fetch products from {store.shop_domain}: {e}")
-            import traceback; traceback.print_exc()
-            continue
 
     print(f">>> products found: {len(all_products)}")
     return all_products
