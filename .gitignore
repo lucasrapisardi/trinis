@@ -1,10 +1,12 @@
-# Backend
+# Python
 trinis/venv/
 trinis/__pycache__/
 trinis/**/__pycache__/
 trinis/**/*.pyc
+trinis/**/*.pyo
 trinis/.env
 trinis/*.egg-info/
+trinis/.pytest_cache/
 
 # Frontend
 productsync-web/node_modules/
@@ -13,9 +15,27 @@ productsync-web/.env.local
 productsync-web/.env
 productsync-web/out/
 
-# Sistema
-.DS_Store
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Logs
 *.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
 .vscode/
-trinis/node_modules/
-node_modules/
+.idea/
+*.swp
+*.swo
+
+# Docker
+docker-compose.override.yml
+
+# MinIO data
+minio-data/
