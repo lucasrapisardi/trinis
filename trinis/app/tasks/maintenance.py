@@ -119,3 +119,116 @@ def _fire_sync_job(db, config: VendorConfig):
     db.commit()
 
     print(f"✓ Scheduled sync fired: {config.name} (job {job.id})")
+
+
+@celery_app.task
+def run_auto_backups():
+    """Run automatic daily backups for Standard and Premium subscribers."""
+    from datetime import datetime, timezone, timedelta
+    from app.models.models import BackupSubscription, BackupSnapshot, ShopifyStore
+    from sqlalchemy import select as sa_select
+
+    with SyncSession() as db:
+        # Get all active Standard/Premium subscriptions due for backup
+        result = db.execute(
+            sa_select(BackupSubscription).where(
+                BackupSubscription.is_active == True,
+                BackupSubscription.plan.in_(["standard", "premium"]),
+            )
+        )
+        subs = result.scalars().all()
+
+        for sub in subs:
+            # Check if already ran today
+            today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            recent = db.execute(
+                sa_select(BackupSnapshot).where(
+                    BackupSnapshot.tenant_id == sub.tenant_id,
+                    BackupSnapshot.trigger == "auto",
+                    BackupSnapshot.created_at >= today_start,
+                )
+            ).scalar_one_or_none()
+
+            if recent:
+                continue  # Already backed up today
+
+            # Get active store
+            store_result = db.execute(
+                sa_select(ShopifyStore).where(
+                    ShopifyStore.tenant_id == sub.tenant_id,
+                    ShopifyStore.is_active == True,
+                )
+            ).scalars().first()
+
+            if not store_result:
+                continue
+
+            # Create snapshot record
+            snapshot = BackupSnapshot(
+                tenant_id=sub.tenant_id,
+                store_id=store_result.id,
+                status="pending",
+                trigger="auto",
+            )
+            db.add(snapshot)
+            db.flush()
+            db.commit()
+
+            # Dispatch backup task
+            from app.tasks.backup import run_backup
+            run_backup.apply_async(
+                args=[str(snapshot.id), str(sub.tenant_id)],
+                queue="default",
+            )
+            print(f"✓ Auto backup triggered for tenant {sub.tenant_id}")
+
+
+@celery_app.task
+def cleanup_expired_backups():
+    """Delete backup snapshots older than the plan retention period."""
+    from datetime import datetime, timezone, timedelta
+    from app.models.models import BackupSubscription, BackupSnapshot
+    from sqlalchemy import select as sa_select
+    import boto3
+    from botocore.client import Config
+
+    RETENTION = {"basic": 7, "standard": 30, "premium": 90}
+
+    with SyncSession() as db:
+        result = db.execute(
+            sa_select(BackupSubscription).where(BackupSubscription.is_active == True)
+        )
+        subs = result.scalars().all()
+
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=settings.minio_endpoint_url,
+            aws_access_key_id=settings.minio_access_key,
+            aws_secret_access_key=settings.minio_secret_key,
+            config=Config(signature_version="s3v4"),
+            region_name="us-east-1",
+        )
+
+        for sub in subs:
+            days = RETENTION.get(sub.plan, 7)
+            cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+            expired = db.execute(
+                sa_select(BackupSnapshot).where(
+                    BackupSnapshot.tenant_id == sub.tenant_id,
+                    BackupSnapshot.created_at < cutoff,
+                    BackupSnapshot.status == "done",
+                )
+            ).scalars().all()
+
+            for snap in expired:
+                # Delete from MinIO
+                if snap.minio_key:
+                    try:
+                        s3.delete_object(Bucket="productsync-backups", Key=snap.minio_key)
+                    except Exception as e:
+                        print(f"⚠️ MinIO delete failed: {e}")
+                db.delete(snap)
+                print(f"✓ Deleted expired backup {snap.id} ({days}d retention)")
+
+            db.commit()

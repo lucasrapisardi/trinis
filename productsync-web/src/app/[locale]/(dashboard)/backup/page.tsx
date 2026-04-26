@@ -5,7 +5,7 @@ import api from "@/lib/api";
 import clsx from "clsx";
 import toast from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
-import { Download, Trash2, RefreshCw, Shield } from "lucide-react";
+import { Download, Trash2, RefreshCw, Shield, RotateCcw } from "lucide-react";
 
 const PLANS = {
   basic:    { price: 9,  label: "Basic",    snapshots: 5,    retention: "7 days",  auto: false, description: "Manual backups only" },
@@ -20,6 +20,7 @@ export default function BackupPage() {
   const [running, setRunning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+  const [restoreModal, setRestoreModal] = useState<string | null>(null);
   const [isFree, setIsFree] = useState(false);
 
   useEffect(() => {
@@ -118,6 +119,26 @@ export default function BackupPage() {
     } finally {
       setRunning(false);
     }
+  }
+
+  async function handleRestore(snapshotId: string, mode: string) {
+    setConfirmModal(null);
+    try {
+      await api.post(`/backup/restore/${snapshotId}?mode=${mode}`);
+      toast.success("Restore started — products will be updated shortly");
+    } catch {
+      toast.error("Failed to start restore");
+    }
+  }
+
+  function promptRestore(snapshotId: string) {
+    setConfirmModal({
+      title: "Restore backup",
+      message: "",
+      onConfirm: () => {},
+    });
+    // Use custom modal with two options
+    setRestoreModal(snapshotId);
   }
 
   async function handleDownload(snapshotId: string) {
@@ -292,6 +313,9 @@ export default function BackupPage() {
               )}>{snap.status}</span>
               {snap.status === "done" && (
                 <div className="flex gap-1">
+                  <button onClick={() => setRestoreModal(snap.id)} className="btn text-[10px] py-0.5 px-2 flex items-center gap-1">
+                    <RotateCcw size={10} /> Restore
+                  </button>
                   <button onClick={() => handleDownload(snap.id)} className="btn text-[10px] py-0.5 px-2 flex items-center gap-1">
                     <Download size={10} /> Download
                   </button>
@@ -310,6 +334,33 @@ export default function BackupPage() {
           <p className="text-xs text-gray-400">No backups yet — run your first backup above.</p>
         </div>
       )}
+      {/* Restore Modal */}
+      {restoreModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900">Restore backup</h3>
+            <p className="text-xs text-gray-500">Choose how to restore this snapshot:</p>
+            <div className="space-y-2">
+              <button
+                onClick={() => { handleRestore(restoreModal, "all"); setRestoreModal(null); }}
+                className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <p className="text-xs font-medium text-gray-800">Restore all products</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">Updates all existing products and recreates deleted ones</p>
+              </button>
+              <button
+                onClick={() => { handleRestore(restoreModal, "new_only"); setRestoreModal(null); }}
+                className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <p className="text-xs font-medium text-gray-800">Restore missing products only</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">Only recreates products that no longer exist in your store</p>
+              </button>
+            </div>
+            <button onClick={() => setRestoreModal(null)} className="w-full btn text-xs">Cancel</button>
+          </div>
+        </div>
+      )}
+
       {/* Confirm Modal */}
       {confirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">

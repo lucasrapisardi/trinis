@@ -337,3 +337,36 @@ async def change_backup_plan(
     sub.plan = plan.value if hasattr(plan, "value") else plan
     await db.commit()
     return {"ok": True, "plan": sub.plan}
+
+
+# ── Restore backup ────────────────────────────────────────────────────────
+
+@router.post("/restore/{snapshot_id}")
+async def restore_backup_endpoint(
+    snapshot_id: uuid.UUID,
+    mode: str = "all",
+    tenant: Tenant = Depends(get_current_tenant),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Restore products from a snapshot.
+    mode: "all" = restore all products, "new_only" = only missing products
+    """
+    result = await db.execute(
+        select(BackupSnapshot).where(
+            BackupSnapshot.id == snapshot_id,
+            BackupSnapshot.tenant_id == tenant.id,
+            BackupSnapshot.status == "done",
+        )
+    )
+    snapshot = result.scalar_one_or_none()
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+
+    from app.tasks.backup import restore_backup
+    restore_backup.apply_async(
+        args=[str(snapshot_id), str(tenant.id), mode],
+        queue="default",
+    )
+    return {"ok": True, "message": f"Restore started in {mode} mode"}

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import clsx from "clsx";
 import toast from "react-hot-toast";
-import { billingApi, tenantApi } from "@/lib/api";
+import api, { billingApi, tenantApi } from "@/lib/api";
 import type { Tenant, PlanName } from "@/types";
 
 const PLANS = [
@@ -54,9 +54,11 @@ export default function BillingPage() {
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<PlanName | null>(null);
+  const [backup, setBackup] = useState<any>(null);
 
   useEffect(() => {
     tenantApi.get().then((r) => setTenant(r.data)).catch(() => null);
+    api.get("/backup/status").then((r) => setBackup(r.data)).catch(() => null);
   }, []);
 
   async function handleManageBilling() {
@@ -238,6 +240,44 @@ export default function BillingPage() {
           );
         })}
       </div>
+
+      {/* Backup Add-on */}
+      <div className="card space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-gray-800">Backup Add-on</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">Full product snapshots stored securely</p>
+          </div>
+          {backup?.subscription?.active ? (
+            <span className="text-[10px] bg-teal-50 text-teal-700 px-2 py-0.5 rounded font-medium capitalize">
+              {backup.subscription.plan} · Active · {backup.subscription.plan === "basic" ? "$9" : backup.subscription.plan === "standard" ? "$19" : "$39"}/mo
+            </span>
+          ) : (
+            <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded">Not subscribed</span>
+          )}
+        </div>
+        {backup?.subscription?.active ? (
+          <div className="flex items-center justify-between border-t border-gray-100 pt-3">
+            <div className="flex gap-4">
+              <div>
+                <p className="text-[10px] text-gray-400">Snapshots</p>
+                <p className="text-xs font-medium text-gray-700">{backup.snapshots?.filter((s: any) => s.status === "done").length ?? 0} stored</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400">Plan</p>
+                <p className="text-xs font-medium text-gray-700 capitalize">{backup.subscription.plan}</p>
+              </div>
+            </div>
+            <a href="/backup" className="btn text-xs">Manage backup →</a>
+          </div>
+        ) : (
+          <a href="/backup" className="inline-block btn btn-primary text-xs">
+            Subscribe to Backup →
+          </a>
+        )}
+      </div>
+
+
 
       {/* Invoice history */}
       <div className="card p-0 overflow-hidden">

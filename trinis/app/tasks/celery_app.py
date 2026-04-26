@@ -63,5 +63,13 @@ celery_app.conf.update(
             "task": "app.tasks.maintenance.trigger_scheduled_syncs",
             "schedule": crontab(minute="*/5"),  # every 5 min, checks cron expressions
         },
+        "run-auto-backups": {
+            "task": "app.tasks.maintenance.run_auto_backups",
+            "schedule": crontab(hour=2, minute=0),  # daily at 2am UTC
+        },
+        "cleanup-expired-backups": {
+            "task": "app.tasks.maintenance.cleanup_expired_backups",
+            "schedule": crontab(hour=3, minute=0),  # daily at 3am UTC
+        },
     },
 )
