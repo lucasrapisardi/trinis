@@ -28,12 +28,14 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const t = useTranslations("nav");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [disconnected, setDisconnected] = useState<string[]>([]);
 
   async function load() {
     setLoading(true);
     try {
       const r = await api.get("/products");
-      setProducts(r.data);
+      setProducts(r.data.products ?? r.data);
+      setDisconnected(r.data.disconnected_stores ?? []);
     } catch {
       setProducts([]);
     } finally {
@@ -57,6 +59,12 @@ export default function ProductsPage() {
 
   return (
     <div className="p-5 max-w-5xl mx-auto">
+      {disconnected.length > 0 && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+          ⚠️ {disconnected.join(", ")} — token expired.{" "}
+          <a href="/stores" className="underline font-medium">Reconnect on Stores page →</a>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-base font-medium text-gray-900">Products</h1>
         <button onClick={load} className="btn text-xs">

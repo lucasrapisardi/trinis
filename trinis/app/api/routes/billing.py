@@ -135,10 +135,33 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 tenant.stripe_subscription_id = data.get("subscription")
 
     elif event_type == "customer.subscription.updated":
-        tenant = await _get_tenant_by_customer(data["customer"])
-        if tenant and data.get("items", {}).get("data"):
-            price_id = data["items"]["data"][0]["price"]["id"]
-            tenant.plan = PRICE_PLAN_MAP.get(price_id, PlanName.free)
+        from app.models.models import BackupSubscription
+        # Check if it's a backup addon subscription
+        backup_result = await db.execute(
+            select(BackupSubscription).where(
+                BackupSubscription.stripe_subscription_id == data["id"]
+            )
+        )
+        backup_sub = backup_result.scalar_one_or_none()
+        if backup_sub:
+            # Backup plan change
+            if data.get("items", {}).get("data"):
+                price_id = data["items"]["data"][0]["price"]["id"]
+                backup_price_map = {
+                    settings.stripe_backup_basic_price_id: "basic",
+                    settings.stripe_backup_standard_price_id: "standard",
+                    settings.stripe_backup_premium_price_id: "premium",
+                }
+                new_plan = backup_price_map.get(price_id)
+                if new_plan:
+                    backup_sub.plan = new_plan
+                backup_sub.is_active = data.get("status") == "active"
+        else:
+            # Main plan change
+            tenant = await _get_tenant_by_customer(data["customer"])
+            if tenant and data.get("items", {}).get("data"):
+                price_id = data["items"]["data"][0]["price"]["id"]
+                tenant.plan = PRICE_PLAN_MAP.get(price_id, PlanName.free)
 
     elif event_type == "customer.subscription.deleted":
         # Check if it's a backup addon subscription

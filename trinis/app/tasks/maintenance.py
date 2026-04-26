@@ -8,6 +8,10 @@ Maintenance tasks — run via Celery Beat on schedule.
 from datetime import datetime, timezone, timedelta
 
 from app.tasks.celery_app import celery_app
+from app.core.config import get_settings
+settings = get_settings()
+from app.core.config import get_settings
+settings = get_settings()
 from app.tasks.base import SyncSession
 from app.models.models import Tenant, ShopifyStore, VendorConfig, Job, JobStatus
 
