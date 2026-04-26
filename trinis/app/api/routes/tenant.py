@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.core.auth import get_current_tenant
+from app.core.auth import get_current_tenant, get_current_user
 from app.db.session import get_db
 from app.models.models import Tenant, VendorConfig
 from app.schemas.schemas import TenantOut, VendorConfigCreate, VendorConfigOut
@@ -88,6 +88,66 @@ async def delete_vendor(
 
     await db.delete(vendor)
 
+
+
+# ── Vendor scrape preview ─────────────────────────────────────────────────────
+@router.post("/vendors/preview")
+async def preview_vendor_scrape(
+    payload: dict,
+    tenant: Tenant = Depends(get_current_tenant),
+    current_user = Depends(get_current_user),
+):
+    """
+    Test-scrape up to 3 products from a vendor URL before saving the config.
+    Uses the generic AI scraper for unknown sites, or the dedicated adapter for known ones.
+    """
+    from urllib.parse import urlparse
+    from app.tasks.scrape_generic import extract_product_links, extract_product_detail
+
+    url = payload.get("base_url", "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="base_url is required")
+
+    try:
+        # Detect scraper type
+        domain = urlparse(url).netloc.lower()
+        if "comercialgomes" in domain:
+            return {"scraper_type": "comercial_gomes", "products": [], "message": "Dedicated adapter will be used for Comercial Gomes."}
+
+        # Check for VTEX
+        from app.tasks.scrape_vtex import is_vtex, fetch_vtex_products
+        if is_vtex(url):
+            products = fetch_vtex_products(url, limit=3)
+            return {
+                "scraper_type": "vtex",
+                "products": [{"title": p["nome"], "price": p["preco"], "ean": p["ean"], "image_url": p["imagem_url"], "url": p["link"]} for p in products],
+                "message": f"VTEX store detected. Showing {len(products)} products.",
+            }
+
+        # Generic AI scrape — limit to 3 products
+        links = extract_product_links(url)
+        if not links:
+            return {"scraper_type": "auto", "products": [], "message": "No product links found on this page."}
+
+        previews = []
+        for item in links[:3]:
+            detail = extract_product_detail(item.get("url", ""))
+            if detail:
+                previews.append({
+                    "title": detail.get("title") or item.get("title", ""),
+                    "price": detail.get("price", 0),
+                    "ean": detail.get("ean", ""),
+                    "image_url": detail.get("image_url", ""),
+                    "url": item.get("url", ""),
+                })
+
+        return {
+            "scraper_type": "auto",
+            "products": previews,
+            "message": f"Found {len(links)} products. Showing first {len(previews)}.",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Preview failed: {str(e)}")
 
 # ── Cancel account ────────────────────────────────────────────────────────────
 

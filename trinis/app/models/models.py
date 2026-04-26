@@ -199,6 +199,7 @@ class VendorConfig(Base):
 
     # Schedule (cron expression)
     scrape_scope: Mapped[str] = mapped_column(String(20), default="pagina")  # "categoria", "subcategoria", "pagina"
+    scraper_type: Mapped[str] = mapped_column(String(50), default="auto")  # "auto", "comercial_gomes", etc.
     sync_schedule: Mapped[str | None] = mapped_column(String(50))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 

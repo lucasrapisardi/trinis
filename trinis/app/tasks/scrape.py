@@ -18,6 +18,8 @@ from bs4 import BeautifulSoup
 from app.tasks.celery_app import celery_app
 from app.tasks.base import JobTask, SyncSession
 from app.models.models import VendorConfig
+from app.tasks.scrape_generic import scrape_generic
+from app.tasks.scrape_vtex import fetch_vtex_products, is_vtex
 
 # Max parallel detail page fetches
 MAX_SCRAPE_WORKERS = 8
@@ -42,7 +44,24 @@ def scrape_vendor(self, job_id: str, tenant_id: str):
             ctx.log("info", f"Scope: {scope} | Limit: {product_limit or 'all'} | Workers: {MAX_SCRAPE_WORKERS}")
             ctx.log("info", f"Target: {config.base_url}")
 
-            products = _scrape_all_pages(config, ctx, scope=scope, limit=product_limit)
+            scraper_type = getattr(config, "scraper_type", "auto")
+            # Detect known adapters by domain
+            if scraper_type == "auto" and config.base_url:
+                from urllib.parse import urlparse as _urlparse
+                domain = _urlparse(config.base_url).netloc.lower()
+                if "comercialgomes" in domain:
+                    scraper_type = "comercial_gomes"
+                elif is_vtex(config.base_url):
+                    scraper_type = "vtex"
+
+            ctx.log("info", f"Using scraper adapter: {scraper_type}")
+
+            if scraper_type == "comercial_gomes":
+                products = _scrape_all_pages(config, ctx, scope=scope, limit=product_limit)
+            elif scraper_type == "vtex":
+                products = fetch_vtex_products(config.base_url, limit=product_limit, ctx=ctx)
+            else:
+                products = scrape_generic(config, ctx, limit=product_limit)
 
             ctx.log("info", f"Scrape complete — {len(products)} products found")
             ctx.update_progress(scraped=len(products), pct=33)
