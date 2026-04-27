@@ -259,6 +259,7 @@ class Job(Base):
 
     product_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
     skip_existing: Mapped[bool] = mapped_column(Boolean, default=False)
+    ai_model: Mapped[str] = mapped_column(String(64), default="gpt-4o-mini")
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     error_message: Mapped[str | None] = mapped_column(Text)
@@ -424,6 +425,33 @@ class BulkEnhanceSubscription(Base):
     stripe_subscription_id: Mapped[str] = mapped_column(String(255), nullable=True)
     images_enhanced_this_month: Mapped[int] = mapped_column(Integer, default=0)
     next_reset_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    tenant: Mapped["Tenant"] = relationship("Tenant", foreign_keys=[tenant_id])
+
+
+# ─────────────────────────────────────────────
+# ModelSubscription — AI model tier add-on
+# ─────────────────────────────────────────────
+class ModelTier(str, enum.Enum):
+    standard = "standard"
+    premium = "premium"
+    ultra = "ultra"
+
+MODEL_TIER_MODELS = {
+    "economy": ["gpt-4o-mini", "gemini-2.5-flash-lite"],
+    "standard": ["gpt-4.1", "gemini-2.5-flash", "claude-haiku-4-5"],
+    "premium": ["gpt-4o", "gemini-2.5-pro", "claude-sonnet-4-6"],
+    "ultra": ["claude-opus-4-7"],
+}
+
+class ModelSubscription(Base):
+    __tablename__ = "model_subscriptions"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, unique=True)
+    tier: Mapped[str] = mapped_column(String(20), nullable=False)  # standard/premium/ultra
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False)
+    stripe_subscription_id: Mapped[str] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     tenant: Mapped["Tenant"] = relationship("Tenant", foreign_keys=[tenant_id])

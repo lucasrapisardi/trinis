@@ -147,6 +147,7 @@ async def create_job(
         product_limit=_apply_job_limit(payload.product_limit, tenant.plan.value),
         scheduled_at=payload.scheduled_at,
         skip_existing=payload.skip_existing,
+        ai_model=payload.ai_model,
     )
     db.add(job)
     await db.flush()

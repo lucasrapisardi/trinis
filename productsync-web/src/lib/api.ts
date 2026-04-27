@@ -80,8 +80,7 @@ export const vendorApi = {
 export const jobsApi = {
   list: (limit = 50) => api.get("/jobs", { params: { limit } }),
   get: (jobId: string) => api.get(`/jobs/${jobId}`),
-  create: (vendor_config_id: string, store_id: string, product_limit?: number | null, scheduled_at?: string | null) =>
-    api.post("/jobs", { vendor_config_id, store_id, product_limit, scheduled_at }),
+  create: (data: Record<string, unknown>) => api.post("/jobs", data),
   retry: (jobId: string) => api.post(`/jobs/${jobId}/retry`),
   stop: (jobId: string) => api.post(`/jobs/${jobId}/stop`),
   summary: () => api.get("/jobs/summary/dashboard"),

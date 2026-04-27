@@ -138,6 +138,7 @@ class JobCreate(BaseModel):
     product_limit: int | None = None      # None = all products
     scheduled_at: datetime | None = None  # None = run immediately
     skip_existing: bool = False
+    ai_model: str = "gpt-4o-mini"
 
 
 class JobOut(BaseModel):

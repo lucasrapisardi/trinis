@@ -11,7 +11,6 @@ import type { VendorConfig, ShopifyStore } from "@/types";
 
 type ScheduleType = "now" | "later";
 type LimitType = "all" | "custom";
-type LimitType = "all" | "custom";
 
 export default function NewJobPage() {
   const router = useRouter();
@@ -26,6 +25,8 @@ export default function NewJobPage() {
   const [loading, setLoading] = useState(false);
   const [planJobLimit, setPlanJobLimit] = useState<number | null>(null);
   const [skipExisting, setSkipExisting] = useState(true);
+  const [aiModel, setAiModel] = useState("gpt-4o-mini");
+  const [availableModels, setAvailableModels] = useState<string[]>(["gpt-4o-mini", "gemini-2.5-flash-lite"]);
   const t = useTranslations("jobs");
   const [workersOnline, setWorkersOnline] = useState<boolean | null>(null);
 
@@ -42,6 +43,9 @@ export default function NewJobPage() {
     vendorApi.list().then((r) => setVendors(r.data)).catch(() => null);
     storesApi.list().then((r) => setStores(r.data)).catch(() => null);
     // Check if workers are online
+    api.get("/billing/model-addon/status").then((r) => {
+      setAvailableModels(r.data.available_models ?? ["gpt-4o-mini", "gemini-2.5-flash-lite"]);
+    }).catch(() => null);
     api.get("/jobs/workers/status").then((r) => {
       setWorkersOnline(r.data.online);
     }).catch(() => setWorkersOnline(false));
@@ -61,9 +65,10 @@ export default function NewJobPage() {
         store_id: storeId,
         product_limit: limitType === "custom" ? productLimit : null,
         skip_existing: skipExisting,
+        ai_model: aiModel,
         scheduled_at: scheduleType === "later" ? new Date(scheduledAt).toISOString() : null,
       };
-      const r = await jobsApi.create(payload.vendor_config_id, payload.store_id, payload.product_limit, payload.scheduled_at);
+      const r = await jobsApi.create(payload);
       toast.success(scheduleType === "now" ? "Sync job queued!" : `Job scheduled for ${new Date(scheduledAt).toLocaleString()}`);
       router.push(`/jobs/${r.data.id}`);
     } catch (err: unknown) {
@@ -207,7 +212,28 @@ export default function NewJobPage() {
             </div>
           )}
 
-          {/* Skip existing checkbox */}
+          {/* AI Model selector */}
+          <div className="card space-y-2">
+            <p className="text-xs font-medium text-gray-700">AI Model</p>
+            <p className="text-[10px] text-gray-400">Choose the language model for product enrichment. Upgrade your plan add-on to unlock better models.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {availableModels.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setAiModel(m)}
+                  className={`text-xs px-3 py-2 rounded border text-left transition-colors ${
+                    aiModel === m
+                      ? "border-brand-500 bg-brand-50 text-brand-700 font-medium"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+                    {/* Skip existing checkbox */}
           <div className="card">
             <label className="flex items-start gap-3 cursor-pointer">
               <input

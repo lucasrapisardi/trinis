@@ -109,8 +109,26 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 
     if event_type == "checkout.session.completed":
         metadata = data.get("metadata", {})
+        # Handle model add-on checkout
+        if metadata.get("type") == "model_addon":
+            tenant_id = metadata.get("tenant_id")
+            model_tier = metadata.get("model_tier")
+            stripe_sub_id = data.get("subscription")
+            if tenant_id and model_tier:
+                from app.models.models import ModelSubscription
+                t_result = await db.execute(select(Tenant).where(Tenant.id == uuid.UUID(tenant_id)))
+                t = t_result.scalar_one_or_none()
+                if t:
+                    sub_result = await db.execute(select(ModelSubscription).where(ModelSubscription.tenant_id == t.id))
+                    sub = sub_result.scalar_one_or_none()
+                    if sub:
+                        sub.tier = model_tier
+                        sub.is_active = True
+                        sub.stripe_subscription_id = stripe_sub_id
+                    else:
+                        db.add(ModelSubscription(tenant_id=t.id, tier=model_tier, is_active=True, stripe_subscription_id=stripe_sub_id))
         # Handle credits purchase
-        if metadata.get("type") == "credits":
+        elif metadata.get("type") == "credits":
             tenant_id = metadata.get("tenant_id")
             credits = int(metadata.get("credits", 0))
             pack = metadata.get("pack", "")
@@ -296,3 +314,62 @@ async def bulk_enhance_checkout(
         metadata={"tenant_id": str(tenant.id), "type": "bulk_enhance", "bulk_plan": plan},
     )
     return {"checkout_url": session.url}
+
+
+# ── Model Add-on checkout ─────────────────────────────────────────────────────
+MODEL_ADDON_PRICE_MAP = {
+    "standard": settings.stripe_model_standard_price_id,
+    "premium": settings.stripe_model_premium_price_id,
+    "ultra": settings.stripe_model_ultra_price_id,
+}
+
+@router.post("/model-addon/checkout/{tier}")
+async def model_addon_checkout(
+    tier: str,
+    tenant: Tenant = Depends(get_current_tenant),
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if tier not in MODEL_ADDON_PRICE_MAP:
+        raise HTTPException(400, "Invalid model tier")
+    if tenant.plan == "free":
+        raise HTTPException(403, "Model add-on requires a paid plan")
+    price_id = MODEL_ADDON_PRICE_MAP[tier]
+    if not tenant.stripe_customer_id:
+        customer = stripe.Customer.create(email=current_user.email, name=tenant.name)
+        tenant.stripe_customer_id = customer.id
+        await db.commit()
+    session = stripe.checkout.Session.create(
+        customer=tenant.stripe_customer_id,
+        payment_method_types=["card"],
+        line_items=[{"price": price_id, "quantity": 1}],
+        mode="subscription",
+        success_url="http://localhost:3000/en/billing?model_addon=success",
+        cancel_url="http://localhost:3000/en/billing?model_addon=cancelled",
+        metadata={"tenant_id": str(tenant.id), "type": "model_addon", "model_tier": tier},
+    )
+    return {"checkout_url": session.url}
+
+
+@router.get("/model-addon/status")
+async def model_addon_status(
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.models import ModelSubscription
+    result = await db.execute(
+        select(ModelSubscription).where(ModelSubscription.tenant_id == tenant.id)
+    )
+    sub = result.scalar_one_or_none()
+    return {
+        "tier": sub.tier if sub and sub.is_active else "economy",
+        "is_active": sub.is_active if sub else False,
+        "available_models": _get_available_models(sub.tier if sub and sub.is_active else "economy"),
+    }
+
+
+def _get_available_models(tier: str) -> list:
+    from app.models.models import MODEL_TIER_MODELS
+    economy = MODEL_TIER_MODELS.get("economy", [])
+    tier_models = MODEL_TIER_MODELS.get(tier, [])
+    return list(dict.fromkeys(economy + tier_models))

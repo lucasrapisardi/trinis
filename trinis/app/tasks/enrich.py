@@ -12,6 +12,7 @@ import json
 import queue
 import threading
 from openai import OpenAI
+from app.services.model_router import call_enrich, get_model_tier, FALLBACK_MODEL
 
 from app.tasks.celery_app import celery_app
 from app.tasks.base import JobTask
@@ -93,7 +94,7 @@ def enrich_products(self, job_id: str, tenant_id: str, products: list[dict]):
 
             def enrich_batch(batch):
                 try:
-                    results = _call_gpt_batch(client, system_prompt, batch, config, locale)
+                    results = _call_gpt_batch(client, system_prompt, batch, config, locale, ai_model=ai_model)
                     for product, description in zip(batch, results):
                         product["enriched_description"] = description
                         product["price_multiplier"] = config.price_multiplier
@@ -135,7 +136,7 @@ def _finish_enrich(ctx, job_id, tenant_id, products, total, config):
     )
 
 
-def _call_gpt_batch(client, system_prompt, batch, config, locale) -> list[str]:
+def _call_gpt_batch(client, system_prompt, batch, config, locale, ai_model: str = FALLBACK_MODEL) -> list[str]:
     """
     Send multiple products in a single GPT-4o call.
     Returns list of descriptions in the same order as batch.

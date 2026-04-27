@@ -52,6 +52,13 @@ class Settings(BaseSettings):
     stripe_credits_growth_price_id: str = ""
     stripe_credits_scale_price_id: str = ""
     stripe_credits_pro_price_id: str = ""
+    # AI providers
+    google_api_key: str = ""
+    anthropic_api_key: str = ""
+    # Model add-on Stripe price IDs
+    stripe_model_standard_price_id: str = ""
+    stripe_model_premium_price_id: str = ""
+    stripe_model_ultra_price_id: str = ""
 
     # ── Resend (email service) ────────────────────────
     resend_api_key: str = ""
