@@ -92,6 +92,7 @@ export const billingApi = {
   portal: () => api.post("/billing/portal"),
   creditsCheckout: (pack: string) => api.post(`/billing/credits/checkout/${pack}`),
   bulkEnhanceCheckout: (plan: string) => api.post(`/billing/bulk-enhance/checkout/${plan}`),
+  modelAddonCheckout: (tier: string) => api.post(`/billing/model-addon/checkout/${tier}`),
 };
 
 // ── WebSocket URL builder ─────────────────────────────────────────────────

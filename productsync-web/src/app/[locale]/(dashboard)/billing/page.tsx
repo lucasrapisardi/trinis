@@ -56,11 +56,26 @@ export default function BillingPage() {
   const [loadingPlan, setLoadingPlan] = useState<PlanName | null>(null);
   const [backup, setBackup] = useState<any>(null);
   const [loadingCredits, setLoadingCredits] = useState<string | null>(null);
+  const [modelAddon, setModelAddon] = useState<{tier: string, is_active: boolean} | null>(null);
+  const [loadingModelAddon, setLoadingModelAddon] = useState<string | null>(null);
 
   useEffect(() => {
     tenantApi.get().then((r) => setTenant(r.data)).catch(() => null);
     api.get("/backup/status").then((r) => setBackup(r.data)).catch(() => null);
+    api.get("/billing/model-addon/status").then((r) => setModelAddon(r.data)).catch(() => null);
   }, []);
+
+  async function handleModelAddon(tier: string) {
+    setLoadingModelAddon(tier);
+    try {
+      const r = await billingApi.modelAddonCheckout(tier);
+      window.location.href = r.data.checkout_url;
+    } catch {
+      toast.error("Failed to open model add-on checkout");
+    } finally {
+      setLoadingModelAddon(null);
+    }
+  }
 
   async function handleBuyCredits(pack: string) {
     setLoadingCredits(pack);
@@ -292,7 +307,47 @@ export default function BillingPage() {
 
 
 
-      {/* Credits */}
+      {/* Model Add-on */}
+      <div className="card space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-gray-800">AI Model Add-on</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">Unlock advanced AI models for product enrichment</p>
+          </div>
+          {modelAddon?.is_active ? (
+            <span className="text-[10px] bg-teal-50 text-teal-700 px-2 py-0.5 rounded font-medium capitalize">
+              {modelAddon.tier} · Active
+            </span>
+          ) : (
+            <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded">Economy (default)</span>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-2 border-t border-gray-100 pt-3">
+          {[
+            { tier: "standard", price: "+$10/mo", models: "GPT-4.1, Gemini Flash, Haiku" },
+            { tier: "premium", price: "+$25/mo", models: "GPT-4o, Gemini Pro, Sonnet" },
+            { tier: "ultra", price: "+$49/mo", models: "Claude Opus 4.7" },
+          ].map(({ tier, price, models }) => (
+            <button
+              key={tier}
+              onClick={() => handleModelAddon(tier)}
+              disabled={loadingModelAddon === tier || (modelAddon?.tier === tier && modelAddon?.is_active) || tenant?.plan === "free"}
+              className={`btn text-xs flex flex-col items-start px-3 py-2 border rounded ${
+                modelAddon?.tier === tier && modelAddon?.is_active
+                  ? "border-teal-400 bg-teal-50 text-teal-700"
+                  : "border-gray-200 hover:border-brand-400"
+              }`}
+            >
+              <span className="font-semibold capitalize">{tier} — {price}</span>
+              <span className="text-[10px] text-gray-400 mt-0.5">{models}</span>
+            </button>
+          ))}
+        </div>
+        {tenant?.plan === "free" && (
+          <p className="text-[10px] text-gray-400">Upgrade to a paid plan to unlock model add-ons.</p>
+        )}
+      </div>
+            {/* Credits */}
       <div className="card space-y-3">
         <div className="flex items-center justify-between">
           <div>
