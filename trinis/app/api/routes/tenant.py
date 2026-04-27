@@ -104,9 +104,25 @@ async def preview_vendor_scrape(
     from urllib.parse import urlparse
     from app.tasks.scrape_generic import extract_product_links, extract_product_detail
 
-    url = payload.get("base_url", "").strip()
-    if not url:
+    base_url = payload.get("base_url", "").strip()
+    if not base_url:
         raise HTTPException(status_code=400, detail="base_url is required")
+
+    # Build target URL from scope fields
+    scope = payload.get("scrape_scope", "pagina")
+    categoria = payload.get("categoria", "").strip().strip("/")
+    subcategoria = payload.get("subcategoria", "").strip().strip("/")
+    pagina = payload.get("pagina_especifica", "").strip().strip("/")
+    base = base_url.rstrip("/")
+
+    if scope == "categoria" and categoria:
+        url = f"{base}/{categoria}/"
+    elif scope == "subcategoria" and subcategoria:
+        url = f"{base}/{subcategoria}/"
+    elif scope == "pagina" and pagina:
+        url = f"{base}/{pagina}/"
+    else:
+        url = base_url
 
     try:
         # Detect scraper type
@@ -114,15 +130,36 @@ async def preview_vendor_scrape(
         if "comercialgomes" in domain:
             return {"scraper_type": "comercial_gomes", "products": [], "message": "Dedicated adapter will be used for Comercial Gomes."}
 
-        # Check for VTEX
+        # Platform detection
         from app.tasks.scrape_vtex import is_vtex, fetch_vtex_products
-        if is_vtex(url):
-            products = fetch_vtex_products(url, limit=3)
+        from app.tasks.scrape_shopify import is_shopify, fetch_shopify_products
+        from app.tasks.scrape_woocommerce import is_woocommerce, fetch_woocommerce_products
+        from app.tasks.scrape_nuvemshop import is_nuvemshop, fetch_nuvemshop_products
+
+        def _fmt(products, scraper_type):
             return {
-                "scraper_type": "vtex",
+                "scraper_type": scraper_type,
                 "products": [{"title": p["nome"], "price": p["preco"], "ean": p["ean"], "image_url": p["imagem_url"], "url": p["link"]} for p in products],
-                "message": f"VTEX store detected. Showing {len(products)} products.",
+                "message": f"{scraper_type.upper()} store detected. Showing {len(products)} products.",
             }
+
+        if is_vtex(url):
+            return _fmt(fetch_vtex_products(url, limit=3), "vtex")
+        if is_shopify(url):
+            return _fmt(fetch_shopify_products(url, limit=3), "shopify")
+        if is_nuvemshop(url):
+            return _fmt(fetch_nuvemshop_products(url, limit=3), "nuvemshop")
+        if is_woocommerce(url):
+            products = fetch_woocommerce_products(url, limit=3)
+            if not products:
+                # Try /shop as fallback
+                shop_url = url.rstrip("/") + "/shop/"
+                products = fetch_woocommerce_products(shop_url, limit=3)
+            scraper = "woocommerce (api)" if products and products[0].get("link", "").startswith("http") else "woocommerce (html)"
+            msg = f"WooCommerce detected. {len(products)} products found."
+            if not products:
+                msg = "WooCommerce detected but no products found on this page. Try using a category URL (e.g. /shop/ or /categoria-produto/)."
+            return {"scraper_type": scraper, "products": [{"title": p["nome"], "price": p["preco"], "ean": p["ean"], "image_url": p["imagem_url"], "url": p["link"]} for p in products], "message": msg}
 
         # Generic AI scrape — limit to 3 products
         links = extract_product_links(url)

@@ -20,6 +20,9 @@ from app.tasks.base import JobTask, SyncSession
 from app.models.models import VendorConfig
 from app.tasks.scrape_generic import scrape_generic
 from app.tasks.scrape_vtex import fetch_vtex_products, is_vtex
+from app.tasks.scrape_shopify import fetch_shopify_products, is_shopify
+from app.tasks.scrape_woocommerce import fetch_woocommerce_products, is_woocommerce
+from app.tasks.scrape_nuvemshop import fetch_nuvemshop_products, is_nuvemshop
 
 # Max parallel detail page fetches
 MAX_SCRAPE_WORKERS = 8
@@ -53,13 +56,39 @@ def scrape_vendor(self, job_id: str, tenant_id: str):
                     scraper_type = "comercial_gomes"
                 elif is_vtex(config.base_url):
                     scraper_type = "vtex"
+                elif is_shopify(config.base_url):
+                    scraper_type = "shopify"
+                elif is_nuvemshop(config.base_url):
+                    scraper_type = "nuvemshop"
+                elif is_woocommerce(config.base_url):
+                    scraper_type = "woocommerce"
 
             ctx.log("info", f"Using scraper adapter: {scraper_type}")
+
+            # Build full URL from base_url + scope fields
+            from urllib.parse import urljoin
+            base = config.base_url.rstrip("/")
+            if scope == "categoria" and getattr(config, "categoria", ""):
+                target_url = f"{base}/{config.categoria.strip('/')}/"
+            elif scope == "subcategoria" and getattr(config, "subcategoria", ""):
+                target_url = f"{base}/{config.subcategoria.strip('/')}/"
+            elif scope == "pagina" and getattr(config, "pagina_especifica", ""):
+                target_url = f"{base}/{config.pagina_especifica.strip('/')}/"
+            else:
+                target_url = config.base_url
+
+            ctx.log("info", f"Target URL: {target_url}")
 
             if scraper_type == "comercial_gomes":
                 products = _scrape_all_pages(config, ctx, scope=scope, limit=product_limit)
             elif scraper_type == "vtex":
-                products = fetch_vtex_products(config.base_url, limit=product_limit, ctx=ctx)
+                products = fetch_vtex_products(target_url, limit=product_limit, ctx=ctx)
+            elif scraper_type == "shopify":
+                products = fetch_shopify_products(target_url, limit=product_limit, ctx=ctx)
+            elif scraper_type == "woocommerce":
+                products = fetch_woocommerce_products(target_url, limit=product_limit, ctx=ctx)
+            elif scraper_type == "nuvemshop":
+                products = fetch_nuvemshop_products(target_url, limit=product_limit, ctx=ctx)
             else:
                 products = scrape_generic(config, ctx, limit=product_limit)
 

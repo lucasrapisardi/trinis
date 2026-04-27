@@ -385,6 +385,8 @@ export default function SettingsPage() {
   });
   const [vendors, setVendors] = useState<VendorConfig[]>([]);
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewResult, setPreviewResult] = useState<{products: any[], message: string, scraper_type: string} | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -409,6 +411,26 @@ export default function SettingsPage() {
       toast.error("Failed to save vendor");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handlePreview() {
+    if (!editing?.base_url) { toast.error("Enter a URL first"); return; }
+    setPreviewing(true);
+    setPreviewResult(null);
+    try {
+      const r = await api.post("/vendors/preview", {
+        base_url: editing.base_url,
+        scrape_scope: editing.scrape_scope,
+        categoria: editing.categoria,
+        subcategoria: editing.subcategoria,
+        pagina_especifica: editing.pagina_especifica,
+      });
+      setPreviewResult(r.data);
+    } catch {
+      toast.error("Preview failed");
+    } finally {
+      setPreviewing(false);
     }
   }
 
@@ -604,12 +626,30 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-1">
+              <div className="flex gap-2 pt-1 flex-wrap">
                 <button onClick={handleSaveVendor} disabled={saving} className="btn btn-primary text-xs">
                   {saving ? "Saving…" : "Salvar fornecedor"}
                 </button>
-                <button onClick={() => setEditing(null)} className="btn text-xs">Cancel</button>
+                <button onClick={handlePreview} disabled={previewing} className="btn text-xs">
+                  {previewing ? "Testing…" : "🔍 Test scrape"}
+                </button>
+                <button onClick={() => { setEditing(null); setPreviewResult(null); }} className="btn text-xs">Cancel</button>
               </div>
+              {previewResult && (
+                <div className="mt-3 p-3 bg-gray-50 rounded border border-gray-200 space-y-2">
+                  <p className="text-[10px] text-gray-500">{previewResult.message} · adapter: <span className="font-mono">{previewResult.scraper_type}</span></p>
+                  {previewResult.products.map((p: any, i: number) => (
+                    <div key={i} className="flex gap-2 items-start border-t border-gray-100 pt-2">
+                      {p.image_url && <img src={p.image_url} className="w-10 h-10 object-cover rounded border border-gray-200 flex-shrink-0" />}
+                      <div>
+                        <p className="text-xs font-medium text-gray-800">{p.title}</p>
+                        <p className="text-[10px] text-gray-400">R$ {p.price} · EAN: {p.ean || "—"}</p>
+                        <a href={p.url} target="_blank" className="text-[10px] text-brand-600 underline">Ver produto →</a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
