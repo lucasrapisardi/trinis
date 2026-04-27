@@ -57,15 +57,30 @@ export default function BillingPage() {
   const [backup, setBackup] = useState<any>(null);
   const [loadingCredits, setLoadingCredits] = useState<string | null>(null);
   const [modelAddon, setModelAddon] = useState<{tier: string, is_active: boolean} | null>(null);
+  const [bulkEnhance, setBulkEnhance] = useState<{plan: string, is_active: boolean} | null>(null);
+  const [loadingBulkEnhance, setLoadingBulkEnhance] = useState<string | null>(null);
   const [loadingModelAddon, setLoadingModelAddon] = useState<string | null>(null);
 
   useEffect(() => {
     tenantApi.get().then((r) => setTenant(r.data)).catch(() => null);
     api.get("/backup/status").then((r) => setBackup(r.data)).catch(() => null);
     api.get("/billing/model-addon/status").then((r) => setModelAddon(r.data)).catch(() => null);
+    api.get("/backup/bulk-enhance-status").then((r) => setBulkEnhance(r.data)).catch(() => null);
   }, []);
 
-  async function handleModelAddon(tier: string) {
+  async function handleBulkEnhance(plan: string) {
+    setLoadingBulkEnhance(plan);
+    try {
+      const r = await billingApi.bulkEnhanceCheckout(plan);
+      window.location.href = r.data.checkout_url;
+    } catch {
+      toast.error("Failed to open bulk enhance checkout");
+    } finally {
+      setLoadingBulkEnhance(null);
+    }
+  }
+
+    async function handleModelAddon(tier: string) {
     setLoadingModelAddon(tier);
     try {
       const r = await billingApi.modelAddonCheckout(tier);
@@ -307,7 +322,44 @@ export default function BillingPage() {
 
 
 
-      {/* Model Add-on */}
+      {/* Bulk Image Enhance */}
+      <div className="card space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-gray-800">Bulk Image Enhance</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">Enhance all product images with AI, not just the hero</p>
+          </div>
+          {bulkEnhance?.is_active ? (
+            <span className="text-[10px] bg-teal-50 text-teal-700 px-2 py-0.5 rounded font-medium capitalize">
+              {bulkEnhance.plan} · Active
+            </span>
+          ) : (
+            <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded">Not subscribed</span>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-2 border-t border-gray-100 pt-3">
+          {[
+            { plan: "essencial", price: "+$59/mo", products: "100/mo" },
+            { plan: "avancado", price: "+$149/mo", products: "300/mo" },
+            { plan: "ilimitado", price: "+$399/mo", products: "1,000/mo · Pro+" },
+          ].map(({ plan, price, products }) => (
+            <button
+              key={plan}
+              onClick={() => handleBulkEnhance(plan)}
+              disabled={loadingBulkEnhance === plan || (bulkEnhance?.plan === plan && bulkEnhance?.is_active)}
+              className={`btn text-xs flex flex-col items-start px-3 py-2 border rounded ${
+                bulkEnhance?.plan === plan && bulkEnhance?.is_active
+                  ? "border-teal-400 bg-teal-50 text-teal-700"
+                  : "border-gray-200 hover:border-brand-400"
+              }`}
+            >
+              <span className="font-semibold capitalize">{plan} — {price}</span>
+              <span className="text-[10px] text-gray-400 mt-0.5">{products}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+            {/* Model Add-on */}
       <div className="card space-y-3">
         <div className="flex items-center justify-between">
           <div>

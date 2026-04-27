@@ -370,3 +370,20 @@ async def restore_backup_endpoint(
         queue="default",
     )
     return {"ok": True, "message": f"Restore started in {mode} mode"}
+
+
+@router.get("/bulk-enhance-status")
+async def bulk_enhance_status(
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.models import BulkEnhanceSubscription
+    result = await db.execute(
+        select(BulkEnhanceSubscription).where(BulkEnhanceSubscription.tenant_id == tenant.id)
+    )
+    sub = result.scalar_one_or_none()
+    return {
+        "plan": sub.plan if sub and sub.is_active else None,
+        "is_active": sub.is_active if sub else False,
+        "images_enhanced_this_month": sub.images_enhanced_this_month if sub else 0,
+    }
