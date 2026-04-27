@@ -43,6 +43,15 @@ class Settings(BaseSettings):
     stripe_backup_basic_price_id: str = ""
     stripe_backup_standard_price_id: str = ""
     stripe_backup_premium_price_id: str = ""
+    # Bulk Enhance
+    stripe_bulk_enhance_essencial_price_id: str = ""
+    stripe_bulk_enhance_avancado_price_id: str = ""
+    stripe_bulk_enhance_ilimitado_price_id: str = ""
+    # Credits one-time
+    stripe_credits_starter_price_id: str = ""
+    stripe_credits_growth_price_id: str = ""
+    stripe_credits_scale_price_id: str = ""
+    stripe_credits_pro_price_id: str = ""
 
     # ── Resend (email service) ────────────────────────
     resend_api_key: str = ""

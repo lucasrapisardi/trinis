@@ -109,8 +109,38 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 
     if event_type == "checkout.session.completed":
         metadata = data.get("metadata", {})
+        # Handle credits purchase
+        if metadata.get("type") == "credits":
+            tenant_id = metadata.get("tenant_id")
+            credits = int(metadata.get("credits", 0))
+            pack = metadata.get("pack", "")
+            if tenant_id and credits:
+                from app.services.credits import add_credits
+                t_result = await db.execute(select(Tenant).where(Tenant.id == uuid.UUID(tenant_id)))
+                t = t_result.scalar_one_or_none()
+                if t:
+                    payment_intent = data.get("payment_intent", "")
+                    add_credits(db, t.id, credits, reference_id=payment_intent, operation=f"purchase_{pack}")
+        # Handle bulk enhance checkout
+        elif metadata.get("type") == "bulk_enhance":
+            tenant_id = metadata.get("tenant_id")
+            bulk_plan = metadata.get("bulk_plan")
+            stripe_sub_id = data.get("subscription")
+            if tenant_id and bulk_plan:
+                from app.models.models import BulkEnhanceSubscription
+                t_result = await db.execute(select(Tenant).where(Tenant.id == uuid.UUID(tenant_id)))
+                t = t_result.scalar_one_or_none()
+                if t:
+                    sub_result = await db.execute(select(BulkEnhanceSubscription).where(BulkEnhanceSubscription.tenant_id == t.id))
+                    sub = sub_result.scalar_one_or_none()
+                    if sub:
+                        sub.plan = bulk_plan
+                        sub.is_active = True
+                        sub.stripe_subscription_id = stripe_sub_id
+                    else:
+                        db.add(BulkEnhanceSubscription(tenant_id=t.id, plan=bulk_plan, is_active=True, stripe_subscription_id=stripe_sub_id))
         # Handle backup addon checkout
-        if metadata.get("type") == "backup_addon":
+        elif metadata.get("type") == "backup_addon":
             tenant_id = metadata.get("tenant_id")
             backup_plan = metadata.get("backup_plan")
             stripe_sub_id = data.get("subscription")
@@ -196,3 +226,73 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             tenant.usage_reset_at = datetime.now(timezone.utc)
 
     return {"received": True}
+
+
+# ── Credits checkout ──────────────────────────────────────────────────────────
+CREDITS_PRICE_MAP = {
+    "starter": (settings.stripe_credits_starter_price_id, 90),
+    "growth": (settings.stripe_credits_growth_price_id, 250),
+    "scale": (settings.stripe_credits_scale_price_id, 550),
+    "pro": (settings.stripe_credits_pro_price_id, 1200),
+}
+
+@router.post("/credits/checkout/{pack}")
+async def credits_checkout(
+    pack: str,
+    tenant: Tenant = Depends(get_current_tenant),
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if pack not in CREDITS_PRICE_MAP:
+        raise HTTPException(400, "Invalid credits pack")
+    price_id, credits = CREDITS_PRICE_MAP[pack]
+    if not tenant.stripe_customer_id:
+        customer = stripe.Customer.create(email=current_user.email, name=tenant.name)
+        tenant.stripe_customer_id = customer.id
+        await db.commit()
+    session = stripe.checkout.Session.create(
+        customer=tenant.stripe_customer_id,
+        payment_method_types=["card"],
+        line_items=[{"price": price_id, "quantity": 1}],
+        mode="payment",
+        success_url="http://localhost:3000/en/billing?credits=success",
+        cancel_url="http://localhost:3000/en/billing?credits=cancelled",
+        metadata={"tenant_id": str(tenant.id), "type": "credits", "pack": pack, "credits": credits},
+    )
+    return {"checkout_url": session.url}
+
+
+# ── Bulk Enhance checkout ─────────────────────────────────────────────────────
+BULK_ENHANCE_PRICE_MAP = {
+    "essencial": settings.stripe_bulk_enhance_essencial_price_id,
+    "avancado": settings.stripe_bulk_enhance_avancado_price_id,
+    "ilimitado": settings.stripe_bulk_enhance_ilimitado_price_id,
+}
+
+@router.post("/bulk-enhance/checkout/{plan}")
+async def bulk_enhance_checkout(
+    plan: str,
+    tenant: Tenant = Depends(get_current_tenant),
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if plan not in BULK_ENHANCE_PRICE_MAP:
+        raise HTTPException(400, "Invalid bulk enhance plan")
+    # Ilimitado requires Pro or Business
+    if plan == "ilimitado" and tenant.plan not in ("pro", "business"):
+        raise HTTPException(403, "Ilimitado plan requires Pro or Business subscription")
+    price_id = BULK_ENHANCE_PRICE_MAP[plan]
+    if not tenant.stripe_customer_id:
+        customer = stripe.Customer.create(email=current_user.email, name=tenant.name)
+        tenant.stripe_customer_id = customer.id
+        await db.commit()
+    session = stripe.checkout.Session.create(
+        customer=tenant.stripe_customer_id,
+        payment_method_types=["card"],
+        line_items=[{"price": price_id, "quantity": 1}],
+        mode="subscription",
+        success_url="http://localhost:3000/en/billing?bulk_enhance=success",
+        cancel_url="http://localhost:3000/en/billing?bulk_enhance=cancelled",
+        metadata={"tenant_id": str(tenant.id), "type": "bulk_enhance", "bulk_plan": plan},
+    )
+    return {"checkout_url": session.url}
