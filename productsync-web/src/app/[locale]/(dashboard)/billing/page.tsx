@@ -55,11 +55,24 @@ export default function BillingPage() {
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<PlanName | null>(null);
   const [backup, setBackup] = useState<any>(null);
+  const [loadingCredits, setLoadingCredits] = useState<string | null>(null);
 
   useEffect(() => {
     tenantApi.get().then((r) => setTenant(r.data)).catch(() => null);
     api.get("/backup/status").then((r) => setBackup(r.data)).catch(() => null);
   }, []);
+
+  async function handleBuyCredits(pack: string) {
+    setLoadingCredits(pack);
+    try {
+      const r = await billingApi.creditsCheckout(pack);
+      window.location.href = r.data.checkout_url;
+    } catch {
+      toast.error("Failed to open credits checkout");
+    } finally {
+      setLoadingCredits(null);
+    }
+  }
 
   async function handleManageBilling() {
     setLoadingPortal(true);
@@ -279,7 +292,43 @@ export default function BillingPage() {
 
 
 
-      {/* Invoice history */}
+      {/* Credits */}
+      <div className="card space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-gray-800">Créditos sob demanda</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">Use quando estourar o limite do plano — nunca expiram</p>
+          </div>
+          <span className="text-xs font-semibold text-brand-600">
+            {(tenant?.credits_balance ?? 0).toLocaleString()} créditos
+          </span>
+        </div>
+        {tenant && tenant.products_synced_this_month / tenant.plan_limit >= 0.9 && (
+          <div className="text-[10px] bg-yellow-50 border border-yellow-200 rounded px-2 py-1.5 text-yellow-800">
+            ⚠️ Você usou {Math.round(tenant.products_synced_this_month / tenant.plan_limit * 100)}% do seu plano este mês.
+            Compre créditos para continuar sincronizando sem interrupção.
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-2 border-t border-gray-100 pt-3">
+          {[
+            { pack: "starter", label: "Starter", price: "$10", credits: "90 créditos" },
+            { pack: "growth", label: "Growth", price: "$25", credits: "250 créditos" },
+            { pack: "scale", label: "Scale", price: "$50", credits: "550 créditos" },
+            { pack: "pro", label: "Pro Pack", price: "$100", credits: "1.200 créditos" },
+          ].map(({ pack, label, price, credits }) => (
+            <button
+              key={pack}
+              onClick={() => handleBuyCredits(pack)}
+              disabled={loadingCredits === pack}
+              className="btn text-xs flex flex-col items-start px-3 py-2 border border-gray-200 rounded hover:border-brand-400 hover:bg-brand-50"
+            >
+              <span className="font-semibold text-gray-800">{label} — {price}</span>
+              <span className="text-[10px] text-gray-400">{credits}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+            {/* Invoice history */}
       <div className="card p-0 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
           <p className="text-xs font-medium text-gray-700">Invoice history</p>

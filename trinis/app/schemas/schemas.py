@@ -49,6 +49,7 @@ class TenantOut(BaseModel):
     plan: str
     products_synced_this_month: int
     plan_limit: int
+    credits_balance: int
     user_limit: int
     payment_past_due: bool
     created_at: datetime

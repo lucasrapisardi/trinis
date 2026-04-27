@@ -91,6 +91,8 @@ export const jobsApi = {
 export const billingApi = {
   checkout: (plan: string) => api.post(`/billing/checkout/${plan}`),
   portal: () => api.post("/billing/portal"),
+  creditsCheckout: (pack: string) => api.post(`/billing/credits/checkout/${pack}`),
+  bulkEnhanceCheckout: (plan: string) => api.post(`/billing/bulk-enhance/checkout/${plan}`),
 };
 
 // ── WebSocket URL builder ─────────────────────────────────────────────────
