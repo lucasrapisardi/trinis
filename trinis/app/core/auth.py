@@ -138,16 +138,20 @@ async def require_plan(min_plan: str):
 
 async def check_sync_limit(
     tenant: Annotated[Tenant, Depends(get_current_tenant)],
+    db: AsyncSession = Depends(get_db),
 ) -> Tenant:
-    """Raises 402 if tenant has hit their monthly product sync limit."""
+    """Raises 402 if tenant has hit their monthly product sync limit AND has no credits."""
     if tenant.products_synced_this_month >= tenant.plan_limit:
-        raise HTTPException(
-            status_code=402,
-            detail={
-                "code": "plan_limit_reached",
-                "limit": tenant.plan_limit,
-                "used": tenant.products_synced_this_month,
-                "upgrade_url": "/billing",
-            },
-        )
+        # Check if tenant has credits to continue
+        if tenant.credits_balance <= 0:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "code": "plan_limit_reached",
+                    "limit": tenant.plan_limit,
+                    "used": tenant.products_synced_this_month,
+                    "credits": tenant.credits_balance,
+                    "upgrade_url": "/billing",
+                },
+            )
     return tenant

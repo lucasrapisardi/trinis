@@ -85,25 +85,32 @@ def upgrade_images(self, job_id: str, tenant_id: str, products: list[dict]):
                     return i, product
 
                 log_queue.put(("info", f"  Processing [{i+1}/{total}]: {product['nome'][:40]}"))
-                upgraded = _upgrade_product_images(client, product["images"], image_prompt)
-
+                images = product["images"]
+                hero_url = images[0] if images else None
+                other_urls = images[1:] if len(images) > 1 else []
                 minio_keys = []
-                for idx, img_bytes in enumerate(upgraded):
+                # Hero image — enhance with gpt-image-1
+                if hero_url:
+                    hero_bytes = _upgrade_product_images(client, [hero_url], image_prompt)
+                    if hero_bytes:
+                        try:
+                            key = upload_image(image_bytes=hero_bytes[0], tenant_id=tenant_id, ean=ean, index=0)
+                            minio_keys.append(key)
+                        except Exception as e:
+                            log_queue.put(("warn", f"    hero upload failed: {e}"))
+                # Other images — download directly, no AI
+                import requests as _req
+                for idx, url in enumerate(other_urls):
                     try:
-                        key = upload_image(
-                            image_bytes=img_bytes,
-                            tenant_id=tenant_id,
-                            ean=ean,
-                            index=idx,
-                        )
+                        resp = _req.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
+                        resp.raise_for_status()
+                        key = upload_image(image_bytes=resp.content, tenant_id=tenant_id, ean=ean, index=idx+1)
                         minio_keys.append(key)
                     except Exception as e:
-                        log_queue.put(("warn", f"    ✗ MinIO upload failed: {e}"))
-
-                product["upgraded_images"] = upgraded
+                        log_queue.put(("warn", f"    image {idx+1} download failed: {e}"))
+                product["upgraded_images"] = minio_keys
                 product["minio_keys"] = minio_keys
-
-                if not upgraded:
+                if not minio_keys:
                     product["image_error"] = "Image upgrade failed"
                     image_errors[0] += 1
                 else:
@@ -112,7 +119,7 @@ def upgrade_images(self, job_id: str, tenant_id: str, products: list[dict]):
                         "minio_keys": minio_keys,
                         "enriched_description": product.get("enriched_description", ""),
                     })
-                    log_queue.put(("info", f"  ✓ Done [{i+1}/{total}]: {len(minio_keys)} images stored"))
+                    log_queue.put(("info", f"  Done [{i+1}/{total}]: hero+{len(other_urls)} direct = {len(minio_keys)} stored"))
 
                 completed[0] += 1
                 time.sleep(0.2)

@@ -120,12 +120,29 @@ class _JobContext:
         self.job.progress_pct = 100
         self.db.commit()
 
-        # Increment tenant's monthly usage counter
+        # Increment tenant's monthly usage counter + debit credits if over limit
         from app.models.models import Tenant
+        from app.services.credits import debit_credits
         tenant = self.db.get(Tenant, self.job.tenant_id)
         if tenant:
-            tenant.products_synced_this_month += self.job.products_pushed
+            pushed = self.job.products_pushed
+            before = tenant.products_synced_this_month
+            limit = tenant.plan_limit
+            tenant.products_synced_this_month += pushed
             self.db.commit()
+            # Debit credits for products that exceeded the plan limit
+            over_limit = max(0, (before + pushed) - limit)
+            if over_limit > 0:
+                debited = debit_credits(
+                    self.db, tenant.id,
+                    operation="product_enrich",
+                    quantity=over_limit,
+                    reference_id=str(self.job_id),
+                )
+                if debited:
+                    self.log("info", f"Debited {over_limit} credits for {over_limit} products over plan limit")
+                else:
+                    self.log("warn", f"Could not debit {over_limit} credits — balance may be insufficient")
 
         # Close WebSocket channel
         _redis_client.publish(
@@ -156,12 +173,24 @@ class _JobContext:
         self.job.error_summary = _json.dumps(error_summary)
         self.db.commit()
 
-        # Increment tenant usage for successfully pushed products
+        # Increment tenant usage for successfully pushed products + debit credits if over limit
         from app.models.models import Tenant
+        from app.services.credits import debit_credits
         tenant = self.db.get(Tenant, self.job.tenant_id)
         if tenant:
-            tenant.products_synced_this_month += self.job.products_pushed
+            pushed = self.job.products_pushed
+            before = tenant.products_synced_this_month
+            limit = tenant.plan_limit
+            tenant.products_synced_this_month += pushed
             self.db.commit()
+            over_limit = max(0, (before + pushed) - limit)
+            if over_limit > 0:
+                debit_credits(
+                    self.db, tenant.id,
+                    operation="product_enrich",
+                    quantity=over_limit,
+                    reference_id=str(self.job_id),
+                )
 
         summary_msg = f"Completed with errors — pushed: {error_summary.get('pushed', 0)}, failed: {error_summary.get('failed', 0)}"
         self.log("warn", summary_msg)

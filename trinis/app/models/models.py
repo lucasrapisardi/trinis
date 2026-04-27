@@ -82,10 +82,10 @@ class Tenant(Base):
     @property
     def plan_limit(self) -> int:
         limits = {
-            PlanName.free: 2,
+            PlanName.free: 30,
             PlanName.starter: 300,
             PlanName.pro: 1000,
-            PlanName.business: 10000,
+            PlanName.business: 4000,
             PlanName.cancelled: 0,
         }
         return limits[self.plan]
@@ -100,6 +100,11 @@ class Tenant(Base):
             PlanName.cancelled: 0,
         }
         return limits[self.plan]
+
+    # Credits
+    credits_balance: Mapped[int] = mapped_column(Integer, default=0)
+    # Bulk enhance counter
+    images_enhanced_this_month: Mapped[int] = mapped_column(Integer, default=0)
 
     def __repr__(self) -> str:
         return f"<Tenant {self.slug} ({self.plan})>"
@@ -378,3 +383,47 @@ class BackupSnapshot(Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+# ─────────────────────────────────────────────
+# TenantCredits — saldo de créditos sob demanda
+# ─────────────────────────────────────────────
+class CreditTransaction(Base):
+    __tablename__ = "credit_transactions"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    type: Mapped[str] = mapped_column(String(20), nullable=False)  # purchase / consume
+    amount: Mapped[int] = mapped_column(Integer, nullable=False)   # positive=purchase, negative=consume
+    operation: Mapped[str] = mapped_column(String(100), nullable=True)  # e.g. "product_enrich", "bulk_enhance", "snapshot_extra"
+    reference_id: Mapped[str] = mapped_column(String(255), nullable=True)  # job_id, snapshot_id, stripe_payment_intent
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    tenant: Mapped["Tenant"] = relationship("Tenant", foreign_keys=[tenant_id])
+
+
+# ─────────────────────────────────────────────
+# BulkEnhanceSubscription
+# ─────────────────────────────────────────────
+class BulkEnhancePlan(str, enum.Enum):
+    essencial = "essencial"
+    avancado = "avancado"
+    ilimitado = "ilimitado"
+
+BULK_ENHANCE_LIMITS = {
+    "essencial": 100,
+    "avancado": 300,
+    "ilimitado": 1000,
+}
+
+class BulkEnhanceSubscription(Base):
+    __tablename__ = "bulk_enhance_subscriptions"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, unique=True)
+    plan: Mapped[str] = mapped_column(String(20), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False)
+    stripe_subscription_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    images_enhanced_this_month: Mapped[int] = mapped_column(Integer, default=0)
+    next_reset_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    tenant: Mapped["Tenant"] = relationship("Tenant", foreign_keys=[tenant_id])
