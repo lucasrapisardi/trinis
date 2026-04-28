@@ -149,6 +149,7 @@ async def me(current_user: User = Depends(get_current_user)):
         "full_name": current_user.full_name,
         "tenant_id": str(current_user.tenant_id),
         "is_owner": current_user.is_owner,
+        "tour_completed": current_user.tour_completed,
     }
 
 
@@ -164,3 +165,13 @@ async def update_locale(
     current_user.locale = locale
     await db.flush()
     return {"locale": locale}
+
+
+@router.patch("/tour-complete")
+async def mark_tour_complete(
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    current_user.tour_completed = True
+    await db.commit()
+    return {"ok": True}
