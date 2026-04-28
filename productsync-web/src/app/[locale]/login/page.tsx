@@ -1,6 +1,6 @@
 // PATH: src/app/login/page.tsx
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const t = useTranslations("auth");
+  const locale = useLocale();
   const [unconfirmed, setUnconfirmed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -31,7 +32,7 @@ export default function LoginPage() {
     if (result?.error) {
       toast.error("Invalid email or password");
     } else {
-      router.push("/");
+      router.push(`/${locale}/dashboard`);
     }
   }
 
