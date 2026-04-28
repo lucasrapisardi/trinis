@@ -1,7 +1,6 @@
 "use client";
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 
 interface Props {
   styles: string;
@@ -10,18 +9,21 @@ interface Props {
 
 export default function LandingClient({ styles, body }: Props) {
   const { data: session, status } = useSession();
-  const router = useRouter();
 
-  // Patch login links after mount to redirect authenticated users to dashboard
   useEffect(() => {
-    if (status === "authenticated" && session) {
-      // Replace all /login links with /en/dashboard
-      const links = document.querySelectorAll<HTMLAnchorElement>('a[href="/login"]');
-      links.forEach((a) => {
-        a.href = "/en/dashboard";
+    if (status === "loading") return;
+
+    const links = document.querySelectorAll<HTMLAnchorElement>('a[href="/login"]');
+    links.forEach((a) => {
+      if (status === "authenticated" && session) {
         a.textContent = "Dashboard →";
-      });
-    }
+        a.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.location.assign("/en/dashboard");
+        };
+      }
+    });
   }, [status, session]);
 
   return (

@@ -77,6 +77,7 @@ const handler = NextAuth({
           access_token: user.access_token,
           refresh_token: user.refresh_token,
           access_token_expires_at: Date.now() + ACCESS_TOKEN_EXPIRE_MS,
+          tour_completed: user.tour_completed ?? false,
           error: undefined,
         };
       }
@@ -99,6 +100,7 @@ const handler = NextAuth({
         is_owner: token.is_owner as boolean,
         access_token: token.access_token as string,
         refresh_token: token.refresh_token as string,
+        tour_completed: token.tour_completed as boolean,
       };
       // Expose refresh error to client so it can redirect to login
       session.error = token.error as string | undefined;

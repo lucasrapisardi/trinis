@@ -9,6 +9,7 @@ declare module "next-auth" {
     full_name: string | null;
     tenant_id: string;
     is_owner: boolean;
+    tour_completed: boolean;
     access_token: string;
     refresh_token: string;
   }
@@ -20,6 +21,7 @@ declare module "next-auth" {
       full_name: string | null;
       tenant_id: string;
       is_owner: boolean;
+    tour_completed: boolean;
       access_token: string;
       refresh_token: string;
     };
@@ -32,6 +34,7 @@ declare module "next-auth/jwt" {
     full_name: string | null;
     tenant_id: string;
     is_owner: boolean;
+    tour_completed: boolean;
     access_token: string;
     refresh_token: string;
   }

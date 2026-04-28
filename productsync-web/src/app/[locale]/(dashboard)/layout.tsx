@@ -1,5 +1,7 @@
 // PATH: src/app/(dashboard)/layout.tsx
 "use client";
+import ProductTour from "@/components/ProductTour";
+import TourRestartButton from "@/components/TourRestartButton";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslations } from "next-intl";
 
@@ -16,7 +18,7 @@ import { tenantApi } from "@/lib/api";
 import type { Tenant } from "@/types";
 
 const NAV_ITEMS = [
-  { href: "/",         key: "dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", key: "dashboard", icon: LayoutDashboard },
   { href: "/jobs",     key: "jobs",      icon: Clock },
   { href: "/products", key: "products",  icon: Package },
   { href: "/stores",   key: "stores",    icon: Store },
@@ -70,7 +72,8 @@ export default function DashboardLayout({
               <Link
                 key={href}
                 href={href}
-                className={clsx("nav-item", active && "nav-item-active")}
+                id={`nav-${key}`}
+              className={clsx("nav-item", active && "nav-item-active")}
               >
                 <Icon size={13} className="opacity-60 flex-shrink-0" />
                 {t(`nav.${key}`)}
@@ -134,6 +137,8 @@ export default function DashboardLayout({
             </Link>
           </div>
         )}
+        <ProductTour />
+        <TourRestartButton />
         {children}
       </main>
     </div>

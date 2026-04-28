@@ -869,5 +869,24 @@
     lastY = y;
   }, { passive: true });
 </script>
+
+<script>
+(function() {
+  // Check if user is authenticated via next-auth session cookie
+  fetch('/api/auth/session')
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.user) {
+        var locale = data.user.locale || 'en';
+        var links = document.querySelectorAll('a[href="/login"]');
+        links.forEach(function(a) {
+          a.textContent = 'Dashboard →';
+          a.href = '/' + locale + '/dashboard';
+        });
+      }
+    })
+    .catch(function() {});
+})();
+</script>
 </body>
 </html>
