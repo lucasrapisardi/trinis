@@ -52,7 +52,7 @@ export default function NewJobPage() {
         skip_existing: skipExisting,
         scheduled_at: scheduleType === "later" ? new Date(scheduledAt).toISOString() : null,
       };
-      const r = await jobsApi.create(payload.vendor_config_id, payload.store_id);
+      const r = await jobsApi.create(payload);
       toast.success(scheduleType === "now" ? "Sync job queued!" : `Job scheduled for ${new Date(scheduledAt).toLocaleString()}`);
       router.push(`/jobs/${r.data.id}`);
     } catch (err: unknown) {

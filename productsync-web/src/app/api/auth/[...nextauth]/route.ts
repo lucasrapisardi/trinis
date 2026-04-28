@@ -8,7 +8,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 // Access token expires in 60 min — refresh 5 min before expiry
 const ACCESS_TOKEN_EXPIRE_MS = 55 * 60 * 1000;
 
-async function refreshAccessToken(token: Record<string, unknown>) {
+async function refreshAccessToken(token: Record<string, unknown>): Promise<import("next-auth/jwt").JWT> {
   try {
     const res = await axios.post(`${API_URL}/auth/refresh`, {
       refresh_token: token.refresh_token,
@@ -20,9 +20,9 @@ async function refreshAccessToken(token: Record<string, unknown>) {
       refresh_token: refresh_token ?? token.refresh_token,
       access_token_expires_at: Date.now() + ACCESS_TOKEN_EXPIRE_MS,
       error: undefined,
-    };
+    } as import("next-auth/jwt").JWT;
   } catch {
-    return { ...token, error: "RefreshAccessTokenError" };
+    return { ...token, error: "RefreshAccessTokenError" } as import("next-auth/jwt").JWT;
   }
 }
 
@@ -79,7 +79,7 @@ const handler = NextAuth({
           access_token_expires_at: Date.now() + ACCESS_TOKEN_EXPIRE_MS,
           tour_completed: user.tour_completed ?? false,
           error: undefined,
-        };
+        } as import("next-auth/jwt").JWT;
       }
 
       // Token still valid
@@ -88,7 +88,7 @@ const handler = NextAuth({
       }
 
       // Token expired — refresh it
-      return refreshAccessToken(token as Record<string, unknown>);
+      return refreshAccessToken(token as Record<string, unknown>) as Promise<import("next-auth/jwt").JWT>;
     },
 
     async session({ session, token }) {

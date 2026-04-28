@@ -34,19 +34,6 @@ export default function StoresPage() {
     }
   }
 
-  async function handleReconnect(shopDomain: string) {
-    try {
-      const r = await api.post("/stores/connect", null, { params: { shop_domain: shopDomain } });
-      if (r.data.redirect_url) window.location.href = r.data.redirect_url;
-    } catch (err: unknown) {
-      const detail = (err as { response?: { data?: { detail?: { code?: string; message?: string } | string } } })?.response?.data?.detail;
-      if (typeof detail === "object" && detail?.code === "store_limit_reached") {
-        toast.error(detail.message || "Store limit reached. Upgrade to connect more stores.");
-      } else {
-        toast.error("Failed to reconnect store");
-      }
-    }
-  }
 
   async function handleRunTask(storeId: string, task: string) {
     setRunningTask(`${storeId}-${task}`);

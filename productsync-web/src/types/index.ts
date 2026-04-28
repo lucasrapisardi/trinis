@@ -20,6 +20,7 @@ export interface Tenant {
   plan: PlanName;
   products_synced_this_month: number;
   plan_limit: number;
+  credits_balance: number;
   user_limit: number;
   payment_past_due: boolean;
   created_at: string;
@@ -82,6 +83,7 @@ export interface JobLog {
 export interface DashboardSummary {
   products_synced_this_month: number;
   plan_limit: number;
+  credits_balance: number;
   user_limit: number;
   plan: PlanName;
   jobs_this_month: number;

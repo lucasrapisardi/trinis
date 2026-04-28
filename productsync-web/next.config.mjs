@@ -9,9 +9,7 @@ const withNextIntl = createNextIntlPlugin("./src/i18n.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  turbopack: {
-    root: __dirname,
-  },
+  output: "standalone",
 };
 
 export default withNextIntl(nextConfig);
