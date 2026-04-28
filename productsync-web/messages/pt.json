@@ -23,7 +23,8 @@
     "billing": "Cobrança",
     "settings": "Configurações",
     "signOut": "Sair",
-    "backup": "Backup"
+    "backup": "Backup",
+    "import": "Importar"
   },
   "auth": {
     "signIn": "Entrar",

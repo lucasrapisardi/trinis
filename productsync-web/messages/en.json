@@ -23,7 +23,8 @@
     "billing": "Billing",
     "settings": "Settings",
     "signOut": "Sign out",
-    "backup": "Backup"
+    "backup": "Backup",
+    "import": "Import"
   },
   "auth": {
     "signIn": "Sign in",

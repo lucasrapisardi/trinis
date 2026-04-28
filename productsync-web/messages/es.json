@@ -23,7 +23,8 @@
     "billing": "Facturación",
     "settings": "Configuración",
     "signOut": "Cerrar sesión",
-    "backup": "Backup"
+    "backup": "Backup",
+    "import": "Importar"
   },
   "auth": {
     "signIn": "Iniciar sesión",

@@ -10,7 +10,7 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import {
   LayoutDashboard, Clock, Package, Store,
-  CreditCard, Settings, LogOut, Zap, Shield,
+  CreditCard, Settings, LogOut, Zap, Shield, Upload,
 } from "lucide-react";
 import { tenantApi } from "@/lib/api";
 import type { Tenant } from "@/types";
@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { href: "/billing",  key: "billing",   icon: CreditCard },
   { href: "/settings", key: "settings",  icon: Settings },
   { href: "/backup",   key: "backup",   icon: Shield },
+  { href: "/import",   key: "import",   icon: Upload },
 ];
 
 export default function DashboardLayout({

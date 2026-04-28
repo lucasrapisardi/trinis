@@ -13,6 +13,7 @@ from app.api.routes import products
 from app.api.routes import password_reset
 from app.api.routes import team
 from app.api.routes import backup
+from app.api.routes import import_products as import_router
 
 settings = get_settings()
 
@@ -53,6 +54,7 @@ app.include_router(products.router, prefix="/api")
 app.include_router(password_reset.router, prefix="/api")
 app.include_router(team.router, prefix="/api")
 app.include_router(backup.router, prefix="/api")
+app.include_router(import_router.router, prefix="/api")
 
 
 @app.get("/health", tags=["health"])
