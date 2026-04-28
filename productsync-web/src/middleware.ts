@@ -28,6 +28,9 @@ function isPublicPath(pathname: string) {
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Landing page — bypass intl and auth
+  if (pathname === "/") return NextResponse.next();
+
   // Always run intl middleware
   const intlResponse = intlMiddleware(req);
 

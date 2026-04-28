@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trinis AI — Collect, Enrich & Deliver</title>
+<meta name="description" content="Automatize a sincronização de produtos no seu e-commerce com IA. Raspe, enriqueça com GPT-4o e publique automaticamente.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #080b12;
+    --bg2:     #0d1120;
+    --bg3:     #111827;
+    --border:  rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --blue:    #2e55d4;
+    --cyan:    #00c9a7;
+    --purple:  #9b5de5;
+    --glow:    rgba(46,85,212,0.32);
+    --text:    #f1f5f9;
+    --muted:   #64748b;
+    --muted2:  #94a3b8;
+    --card:    rgba(17,24,39,0.85);
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Outfit', sans-serif; line-height: 1.6; overflow-x: hidden;
+  }
+
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: 0.3;
+  }
+  .grid-bg {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(46,85,212,0.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(46,85,212,0.028) 1px, transparent 1px);
+    background-size: 64px 64px; pointer-events: none; z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 16px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(8,11,18,0.78); backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--border); transition: opacity 0.3s;
+  }
+
+  .nav-logo svg { height: 36px; width: auto; display: block; }
+
+  .nav-links { display: flex; gap: 30px; list-style: none; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .btn-ghost { padding: 9px 18px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; color: var(--muted); text-decoration: none; transition: color 0.2s; font-family: 'Outfit', sans-serif; }
+  .btn-ghost:hover { color: var(--text); }
+  .btn-primary {
+    padding: 10px 22px; background: var(--blue); color: #fff; border-radius: 8px;
+    font-size: 0.875rem; font-weight: 600; text-decoration: none; font-family: 'Outfit', sans-serif;
+    transition: all 0.2s; box-shadow: 0 0 20px var(--glow);
+  }
+  .btn-primary:hover { background: #2347b8; box-shadow: 0 0 32px rgba(46,85,212,0.5); transform: translateY(-1px); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative; z-index: 1; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 130px 24px 80px; overflow: hidden;
+  }
+  .hero-glow  { position: absolute; width: 760px; height: 560px; background: radial-gradient(ellipse, rgba(46,85,212,0.18) 0%, transparent 65%); top: 38%; left: 50%; transform: translate(-50%,-60%); pointer-events: none; }
+  .hero-glow2 { position: absolute; width: 340px; height: 340px; background: radial-gradient(circle, rgba(155,93,229,0.12) 0%, transparent 70%); bottom: 8%; right: 8%; pointer-events: none; }
+  .hero-glow3 { position: absolute; width: 260px; height: 260px; background: radial-gradient(circle, rgba(0,201,167,0.1) 0%, transparent 70%); bottom: 12%; left: 6%; pointer-events: none; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px; border-radius: 100px;
+    border: 1px solid rgba(0,201,167,0.3); background: rgba(0,201,167,0.07);
+    font-size: 0.75rem; font-weight: 500; color: var(--cyan); margin-bottom: 28px;
+    animation: fadeUp 0.6s ease both;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
+
+  .hero h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(2.8rem, 6vw, 5.2rem);
+    font-weight: 800; line-height: 1.04; letter-spacing: -0.03em; max-width: 860px;
+    animation: fadeUp 0.7s ease 0.1s both;
+  }
+  .hl-cyan   { color: var(--cyan); }
+  .hl-purple { color: var(--purple); }
+  .hl-blue   { color: #6b8ef5; }
+
+  .hero p { font-size: 1.1rem; color: var(--muted2); max-width: 540px; margin: 24px auto 0; font-weight: 400; animation: fadeUp 0.7s ease 0.2s both; }
+
+  .hero-actions { display: flex; gap: 14px; margin-top: 40px; animation: fadeUp 0.7s ease 0.3s both; flex-wrap: wrap; justify-content: center; }
+  .btn-hero { padding: 15px 34px; background: var(--blue); color: #fff; border-radius: 10px; font-size: 1rem; font-weight: 600; text-decoration: none; font-family: 'Outfit', sans-serif; transition: all 0.25s; box-shadow: 0 0 32px var(--glow); }
+  .btn-hero:hover { background: #2347b8; transform: translateY(-2px); box-shadow: 0 0 52px rgba(46,85,212,0.55); }
+  .btn-outline { padding: 15px 34px; border: 1px solid var(--border2); color: var(--text); border-radius: 10px; font-size: 1rem; font-weight: 500; text-decoration: none; font-family: 'Outfit', sans-serif; transition: all 0.25s; background: rgba(255,255,255,0.03); }
+  .btn-outline:hover { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); }
+
+  /* pillars */
+  .hero-pillars {
+    display: flex; gap: 0; margin-top: 60px;
+    animation: fadeUp 0.7s ease 0.4s both;
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    background: rgba(13,17,32,0.82); backdrop-filter: blur(10px);
+    flex-wrap: wrap;
+  }
+  .pillar { padding: 22px 40px; text-align: center; border-right: 1px solid var(--border); }
+  .pillar:last-child { border-right: none; }
+  .pillar-icon { font-size: 1.4rem; margin-bottom: 6px; }
+  .pillar-name { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; }
+  .pillar-sub  { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .pillar-collect .pillar-name { color: #6b8ef5; }
+  .pillar-enrich  .pillar-name { color: var(--cyan); }
+  .pillar-deliver .pillar-name { color: var(--purple); }
+
+  /* MOCKUP */
+  .hero-visual { position: relative; margin-top: 72px; width: 100%; max-width: 960px; animation: fadeUp 0.8s ease 0.5s both; filter: drop-shadow(0 40px 80px rgba(0,0,0,0.6)); }
+  .mockup-chrome { background: #1a1f2e; border: 1px solid var(--border2); border-radius: 14px 14px 0 0; padding: 13px 18px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r{background:#ef4444} .dot-y{background:#eab308} .dot-g{background:#22c55e}
+  .mockup-url { margin-left: 10px; flex: 1; background: rgba(255,255,255,0.05); border-radius: 6px; padding: 5px 14px; font-size: 0.72rem; color: var(--muted); font-family: monospace; }
+  .mockup-body { background: var(--bg2); border: 1px solid var(--border); border-top: none; border-radius: 0 0 14px 14px; display: grid; grid-template-columns: 210px 1fr; min-height: 380px; }
+  .mock-sidebar { background: #0a0e1a; padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid var(--border); border-radius: 0 0 0 14px; }
+  .mock-nav-item { padding: 9px 12px; border-radius: 7px; font-size: 0.76rem; color: var(--muted); display: flex; align-items: center; gap: 9px; }
+  .mock-nav-item.active { background: rgba(46,85,212,0.14); color: #93b4fd; }
+  .mock-main { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+  .mock-header { display: flex; justify-content: space-between; align-items: center; }
+  .mock-title { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; }
+  .mock-subtitle { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .mock-pill { padding: 4px 12px; border-radius: 100px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; }
+  .mock-pill.running { background: rgba(46,85,212,0.18); color: #93b4fd; animation: blink 1.5s ease infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .mock-prog-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .mock-prog-label { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--muted); }
+  .mock-prog-bar { background: rgba(255,255,255,0.07); border-radius: 100px; height: 5px; overflow: hidden; }
+  .mock-prog-fill { height: 100%; width: 68%; background: linear-gradient(90deg, var(--blue), var(--cyan)); border-radius: 100px; animation: prog 3.5s ease infinite alternate; }
+  @keyframes prog { from{width:50%} to{width:82%} }
+  .mock-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .mock-kpi { background: var(--bg3); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); }
+  .mock-kpi-num { font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800; }
+  .mock-kpi-label { font-size: 0.65rem; color: var(--muted); margin-top: 1px; }
+  .mock-log { background: #060810; border-radius: 8px; border: 1px solid var(--border); padding: 12px 16px; font-family: 'Courier New', monospace; font-size: 0.69rem; color: var(--muted); line-height: 1.9; }
+  .log-ok{color:#4ade80} .log-info{color:#67e8f9} .log-warn{color:#fcd34d} .log-skip{color:#a78bfa}
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── SHARED SECTION STYLES ── */
+  section { position: relative; z-index: 1; padding: 100px 24px; }
+  .container { max-width: 1120px; margin: 0 auto; }
+  .sec-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cyan); margin-bottom: 14px; }
+  .sec-title { font-family: 'Outfit', sans-serif; font-size: clamp(1.9rem, 4vw, 2.9rem); font-weight: 800; letter-spacing: -0.025em; line-height: 1.08; }
+  .sec-sub { color: var(--muted2); font-size: 1rem; max-width: 520px; margin-top: 14px; }
+
+  /* ── FEATURES ── */
+  .features-section { background: var(--bg2); }
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 60px; background: var(--border); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .feat-card { background: var(--bg3); padding: 32px 28px; transition: background 0.25s; position: relative; overflow: hidden; }
+  .feat-card:hover { background: #161e30; }
+  .feat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; transform: scaleX(0); transform-origin: left; transition: transform 0.35s ease; }
+  .feat-card:hover::after { transform: scaleX(1); }
+  .feat-card.c-collect::after { background: linear-gradient(90deg, var(--blue), #6b8ef5); }
+  .feat-card.c-enrich::after  { background: linear-gradient(90deg, var(--cyan), #00e8c0); }
+  .feat-card.c-deliver::after { background: linear-gradient(90deg, var(--purple), #c084fc); }
+  .feat-icon { width: 46px; height: 46px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 18px; border: 1px solid; }
+  .feat-icon.blue   { background: rgba(46,85,212,0.12);  border-color: rgba(46,85,212,0.25); }
+  .feat-icon.cyan   { background: rgba(0,201,167,0.12);  border-color: rgba(0,201,167,0.25); }
+  .feat-icon.purple { background: rgba(155,93,229,0.12); border-color: rgba(155,93,229,0.25); }
+  .feat-card h3 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+  .feat-card p { font-size: 0.875rem; color: var(--muted2); line-height: 1.7; }
+  .feat-tag { display: inline-block; margin-top: 14px; padding: 3px 10px; border-radius: 100px; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; border: 1px solid; }
+  .feat-tag.blue   { background: rgba(46,85,212,0.1);  color: #93b4fd; border-color: rgba(46,85,212,0.25); }
+  .feat-tag.cyan   { background: rgba(0,201,167,0.1);  color: var(--cyan); border-color: rgba(0,201,167,0.25); }
+  .feat-tag.purple { background: rgba(155,93,229,0.1); color: #c4b5fd; border-color: rgba(155,93,229,0.25); }
+
+  /* ── PIPELINE ── */
+  .pipeline-wrap { margin-top: 60px; position: relative; }
+  .pipeline-line { position: absolute; top: 34px; left: 34px; right: 34px; height: 2px; background: linear-gradient(90deg, var(--blue), var(--cyan), var(--purple)); opacity: 0.2; }
+  .pipeline-steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; position: relative; }
+  .pipeline-step { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .pipeline-node { width: 68px; height: 68px; border-radius: 14px; background: var(--bg3); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; position: relative; z-index: 2; transition: all 0.3s; }
+  .pipeline-step:hover .pipeline-node { box-shadow: 0 0 24px rgba(46,85,212,0.2); transform: translateY(-4px); }
+  .pipeline-step:nth-child(1):hover .pipeline-node { border-color: rgba(107,142,245,0.5); }
+  .pipeline-step:nth-child(2):hover .pipeline-node { border-color: rgba(107,142,245,0.5); }
+  .pipeline-step:nth-child(3):hover .pipeline-node { border-color: rgba(0,201,167,0.5); }
+  .pipeline-step:nth-child(4):hover .pipeline-node { border-color: rgba(0,201,167,0.5); }
+  .pipeline-step:nth-child(5):hover .pipeline-node { border-color: rgba(155,93,229,0.5); }
+  .pipeline-arrow { position: absolute; top: 22px; right: -14px; z-index: 3; width: 22px; height: 22px; border-radius: 50%; background: var(--bg2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: var(--cyan); }
+  .pipeline-step-name { font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; }
+  .pipeline-step-phase { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: 100px; }
+  .phase-collect  { background: rgba(46,85,212,0.15);  color: #93b4fd; }
+  .phase-enrich   { background: rgba(0,201,167,0.15);  color: var(--cyan); }
+  .phase-deliver  { background: rgba(155,93,229,0.15); color: #c4b5fd; }
+  .pipeline-step-desc { font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
+
+  /* ── BACKUP ── */
+  .backup-section { background: var(--bg2); }
+  .backup-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; margin-top: 60px; }
+  .backup-features { display: flex; flex-direction: column; gap: 16px; }
+  .backup-feat { display: flex; gap: 16px; align-items: flex-start; padding: 20px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg3); transition: border-color 0.2s; }
+  .backup-feat:hover { border-color: rgba(0,201,167,0.3); }
+  .backup-feat-icon { width: 40px; height: 40px; flex-shrink: 0; border-radius: 9px; background: rgba(0,201,167,0.1); border: 1px solid rgba(0,201,167,0.2); display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+  .backup-feat h4 { font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+  .backup-feat p { font-size: 0.82rem; color: var(--muted2); line-height: 1.6; }
+  .code-inline { font-size: 0.78rem; color: var(--cyan); background: rgba(0,201,167,0.08); padding: 1px 6px; border-radius: 4px; font-family: monospace; }
+  .backup-plans-card { background: var(--bg3); border: 1px solid var(--border2); border-radius: 16px; overflow: hidden; }
+  .backup-plans-header { padding: 20px 24px; border-bottom: 1px solid var(--border); font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .backup-plan-row { padding: 18px 24px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 16px; transition: background 0.2s; }
+  .backup-plan-row:last-child { border-bottom: none; }
+  .backup-plan-row:hover { background: rgba(0,201,167,0.04); }
+  .bp-name { font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; }
+  .bp-desc { font-size: 0.78rem; color: var(--muted2); }
+  .bp-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+  .bp-chip { padding: 2px 8px; border-radius: 100px; font-size: 0.65rem; background: rgba(255,255,255,0.06); color: var(--muted2); border: 1px solid var(--border); }
+  .bp-price { font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 800; color: var(--cyan); white-space: nowrap; }
+
+  /* ── PRICING ── */
+  .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 60px; }
+  .plan-card { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 30px 24px; transition: all 0.3s; display: flex; flex-direction: column; }
+  .plan-card:hover { border-color: rgba(46,85,212,0.3); transform: translateY(-4px); }
+  .plan-card.featured { border-color: rgba(0,201,167,0.45); background: rgba(0,201,167,0.04); box-shadow: 0 0 60px rgba(0,201,167,0.08); }
+  .plan-card.featured::before { content: 'Mais popular'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #fff; padding: 4px 16px; border-radius: 100px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; white-space: nowrap; font-family: 'Outfit', sans-serif; }
+  .plan-name { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .plan-price { font-family: 'Outfit', sans-serif; font-size: 2.8rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+  .plan-price sup { font-size: 1.1rem; font-weight: 600; vertical-align: super; margin-right: 1px; }
+  .plan-price .mo { font-size: 0.85rem; font-weight: 400; color: var(--muted); font-family: 'Outfit', sans-serif; }
+  .plan-desc { font-size: 0.82rem; color: var(--muted2); margin: 10px 0 20px; min-height: 40px; }
+  .plan-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
+  .plan-features { list-style: none; display: flex; flex-direction: column; gap: 9px; margin-bottom: 24px; flex: 1; }
+  .plan-features li { display: flex; align-items: flex-start; gap: 9px; font-size: 0.82rem; color: var(--muted2); }
+  .check   { flex-shrink: 0; width: 17px; height: 17px; border-radius: 50%; background: rgba(0,201,167,0.12); color: var(--cyan); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; margin-top: 2px; }
+  .check-x { flex-shrink: 0; width: 17px; height: 17px; border-radius: 50%; background: rgba(100,116,139,0.1); color: var(--muted); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; margin-top: 2px; }
+  .li-x { opacity: 0.45; }
+  .plan-btn { display: block; width: 100%; padding: 12px; text-align: center; border-radius: 9px; font-size: 0.875rem; font-weight: 600; text-decoration: none; transition: all 0.25s; border: 1px solid var(--border2); color: var(--text); background: rgba(255,255,255,0.05); font-family: 'Outfit', sans-serif; }
+  .plan-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+  .plan-btn.feat-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); border-color: transparent; box-shadow: 0 0 24px rgba(0,201,167,0.2); }
+  .plan-btn.feat-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 0 40px rgba(0,201,167,0.35); }
+
+  .backup-note { margin-top: 28px; padding: 20px 28px; background: rgba(155,93,229,0.06); border: 1px solid rgba(155,93,229,0.2); border-radius: 12px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .backup-note-icon { font-size: 1.4rem; flex-shrink: 0; }
+  .backup-note-text { flex: 1; }
+  .backup-note-text strong { font-family: 'Outfit', sans-serif; font-size: 0.9rem; display: block; margin-bottom: 3px; }
+  .backup-note-text span { font-size: 0.82rem; color: var(--muted2); }
+  .backup-note-plans { display: flex; gap: 10px; flex-wrap: wrap; }
+  .backup-chip { padding: 5px 14px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; background: rgba(155,93,229,0.12); border: 1px solid rgba(155,93,229,0.25); color: #c4b5fd; font-family: 'Outfit', sans-serif; }
+
+  /* ── ADD-ONS ── */
+  .addons-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 56px; }
+  .addon-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: all 0.3s; display: flex; gap: 20px; align-items: flex-start; }
+  .addon-card:hover { border-color: rgba(0,201,167,0.25); transform: translateY(-3px); }
+  .addon-icon { width: 52px; height: 52px; flex-shrink: 0; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: 1px solid; }
+  .addon-icon.cyan   { background: rgba(0,201,167,0.1);  border-color: rgba(0,201,167,0.25); }
+  .addon-icon.blue   { background: rgba(46,85,212,0.1);  border-color: rgba(46,85,212,0.25); }
+  .addon-icon.purple { background: rgba(155,93,229,0.1); border-color: rgba(155,93,229,0.25); }
+  .addon-icon.amber  { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); }
+  .addon-body { flex: 1; }
+  .addon-body h3 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+  .addon-body p { font-size: 0.875rem; color: var(--muted2); line-height: 1.65; margin-bottom: 12px; }
+  .addon-plans { display: flex; gap: 8px; flex-wrap: wrap; }
+  .addon-plan-chip { padding: 3px 10px; border-radius: 100px; font-size: 0.7rem; font-weight: 600; border: 1px solid; }
+  .addon-plan-chip.cyan   { background: rgba(0,201,167,0.1);  border-color: rgba(0,201,167,0.25);  color: var(--cyan); }
+  .addon-plan-chip.blue   { background: rgba(46,85,212,0.1);  border-color: rgba(46,85,212,0.25);  color: #93b4fd; }
+  .addon-plan-chip.purple { background: rgba(155,93,229,0.1); border-color: rgba(155,93,229,0.25); color: #c4b5fd; }
+  .addon-plan-chip.amber  { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); color: #fcd34d; }
+  @media (max-width: 700px) { .addons-grid { grid-template-columns: 1fr; } }
+  .faq-section { background: var(--bg2); }
+  .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 56px; }
+  .faq-item { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color 0.2s; }
+  .faq-item:hover { border-color: rgba(0,201,167,0.22); }
+  .faq-q { padding: 20px 22px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 14px; user-select: none; }
+  .faq-toggle { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,201,167,0.08); color: var(--cyan); display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: transform 0.3s, background 0.2s; }
+  .faq-item.open .faq-toggle { transform: rotate(45deg); background: rgba(0,201,167,0.18); }
+  .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.3s ease; padding: 0 22px; font-size: 0.875rem; color: var(--muted2); line-height: 1.75; }
+  .faq-item.open .faq-a { max-height: 220px; padding: 0 22px 20px; }
+
+  /* ── CTA ── */
+  .cta-section { text-align: center; padding: 100px 24px; }
+  .cta-inner { position: relative; max-width: 780px; margin: 0 auto; padding: 80px 56px; border: 1px solid rgba(0,201,167,0.2); border-radius: 24px; background: rgba(0,201,167,0.03); overflow: hidden; }
+  .cta-inner::before { content: ''; position: absolute; top: -40%; left: 50%; transform: translateX(-50%); width: 600px; height: 300px; background: radial-gradient(ellipse, rgba(46,85,212,0.14) 0%, transparent 70%); pointer-events: none; }
+  .cta-inner h2 { font-family: 'Outfit', sans-serif; font-size: clamp(1.8rem, 4vw, 2.9rem); font-weight: 800; letter-spacing: -0.025em; margin-bottom: 16px; }
+  .cta-inner p { color: var(--muted2); max-width: 460px; margin: 0 auto 36px; }
+
+  /* ── FOOTER ── */
+  footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 32px 48px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  footer p { font-size: 0.78rem; color: var(--muted); }
+  .footer-links { display: flex; gap: 24px; list-style: none; }
+  .footer-links a { font-size: 0.78rem; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--text); }
+
+  /* ── REVEAL ── */
+  .reveal { opacity: 0; transform: translateY(26px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    nav { padding: 14px 20px; }
+    .nav-links { display: none; }
+    .mockup-body { grid-template-columns: 1fr; }
+    .mock-sidebar { display: none; }
+    .mock-kpis { grid-template-columns: repeat(2,1fr); }
+    .features-grid { grid-template-columns: 1fr 1fr; }
+    .pipeline-steps { grid-template-columns: repeat(3,1fr); }
+    .pipeline-line { display: none; }
+    .backup-layout { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr 1fr; }
+    .faq-grid { grid-template-columns: 1fr; }
+    .cta-inner { padding: 48px 24px; }
+    footer { flex-direction: column; text-align: center; }
+  }
+  @media (max-width: 560px) {
+    .features-grid { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .pipeline-steps { grid-template-columns: 1fr 1fr; }
+    .hero-pillars { flex-direction: column; }
+    .pillar { border-right: none; border-bottom: 1px solid var(--border); }
+    .pillar:last-child { border-bottom: none; }
+  }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<!-- ══ NAV ══ -->
+<nav>
+  <a href="/" class="nav-logo" aria-label="Trinis AI">
+    <svg viewBox="0 0 220 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- sombra azul escura -->
+      <path d="M8 8 L52 8 L52 26 L8 26 Z" fill="#1a2f7a"/>
+      <path d="M34 8 L52 8 L52 50 L34 50 Z" fill="#1a2f7a"/>
+      <path d="M34 26 Q34 50 58 50 L110 50" fill="none" stroke="#1a2f7a" stroke-width="18" stroke-linecap="butt"/>
+      <polygon points="104,41 118,50 104,59" fill="#1a2f7a"/>
+      <!-- forma branca -->
+      <path d="M4 4 L50 4 L50 22 L4 22 Z" fill="white"/>
+      <path d="M30 4 L50 4 L50 48 L30 48 Z" fill="white"/>
+      <path d="M30 22 Q30 48 56 48 L108 48" fill="none" stroke="white" stroke-width="18" stroke-linecap="butt"/>
+      <polygon points="102,39 118,48 102,57" fill="white"/>
+      <!-- hexágono azul — Collect -->
+      <polygon points="10,30 2,35 2,45 10,50 18,45 18,35" fill="#2e55d4"/>
+      <!-- hexágono ciano — Enrich -->
+      <polygon points="20,24 12,29 12,39 20,44 28,39 28,29" fill="#00c9a7"/>
+      <!-- hexágono roxo — Deliver -->
+      <polygon points="20,38 12,43 12,53 20,58 28,53 28,43" fill="#9b5de5"/>
+      <!-- wordmark -->
+      <text x="130" y="38" font-family="'Outfit', sans-serif" font-size="26" font-weight="700" fill="white" letter-spacing="-0.5">Trinis</text>
+      <text x="196" y="38" font-family="'Outfit', sans-serif" font-size="26" font-weight="800" fill="#00c9a7" letter-spacing="-0.5"> AI</text>
+    </svg>
+  </a>
+
+  <ul class="nav-links">
+    <li><a href="#funcionalidades">Funcionalidades</a></li>
+    <li><a href="#pipeline">Como funciona</a></li>
+    <li><a href="#addons">Add-ons</a></li>
+    <li><a href="#planos">Planos</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a href="/login" class="btn-ghost">Entrar</a>
+    <a href="/register" class="btn-primary">Começar grátis</a>
+  </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+  <div class="hero-glow3"></div>
+
+  <div class="badge"><span class="badge-dot"></span>Collect · Enrich · Deliver — The best AI models available</div>
+
+  <h1>Sincronize produtos no<br><span class="hl-blue">seu e-commerce</span><br>com <span class="hl-cyan">inteligência artificial</span></h1>
+
+  <p>Raspe catálogos de fornecedores, enriqueça descrições e imagens com IA e publique automaticamente na sua loja — em três etapas, zero esforço manual.</p>
+
+  <div class="hero-actions">
+    <a href="/register" class="btn-hero">Criar conta grátis</a>
+    <a href="#pipeline" class="btn-outline">Ver pipeline →</a>
+  </div>
+
+  <div class="hero-pillars">
+    <div class="pillar pillar-collect">
+      <div class="pillar-icon">🕷️</div>
+      <div class="pillar-name">Collect</div>
+      <div class="pillar-sub">Raspagem paralela</div>
+    </div>
+    <div class="pillar pillar-enrich">
+      <div class="pillar-icon">🧠</div>
+      <div class="pillar-name">Enrich</div>
+      <div class="pillar-sub">GPT-4o + gpt-image-1</div>
+    </div>
+    <div class="pillar pillar-deliver">
+      <div class="pillar-icon">🚀</div>
+      <div class="pillar-name">Deliver</div>
+      <div class="pillar-sub">Publicação automática</div>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="mockup-chrome">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="mockup-url">app.trinis.ai/dashboard/jobs/42</div>
+    </div>
+    <div class="mockup-body">
+      <div class="mock-sidebar">
+        <div class="mock-nav-item">📊 Dashboard</div>
+        <div class="mock-nav-item active">⚡ Jobs</div>
+        <div class="mock-nav-item">🏪 Lojas</div>
+        <div class="mock-nav-item">📦 Produtos</div>
+        <div class="mock-nav-item">💾 Backup</div>
+        <div class="mock-nav-item">👥 Equipe</div>
+        <div class="mock-nav-item">💳 Plano</div>
+        <div class="mock-nav-item">⚙️ Config</div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-header">
+          <div>
+            <div class="mock-title">Job #42 — Loja do Zé</div>
+            <div class="mock-subtitle">Iniciado há 3 min · minha-loja.com</div>
+          </div>
+          <div class="mock-pill running">● Executando</div>
+        </div>
+        <div class="mock-prog-wrap">
+          <div class="mock-prog-label"><span>Collect → Enrich → Deliver</span><span>68%</span></div>
+          <div class="mock-prog-bar"><div class="mock-prog-fill"></div></div>
+        </div>
+        <div class="mock-kpis">
+          <div class="mock-kpi"><div class="mock-kpi-num">312</div><div class="mock-kpi-label">Coletados</div></div>
+          <div class="mock-kpi"><div class="mock-kpi-num">247</div><div class="mock-kpi-label">Enriquecidos</div></div>
+          <div class="mock-kpi"><div class="mock-kpi-num">198</div><div class="mock-kpi-label">Publicados</div></div>
+          <div class="mock-kpi"><div class="mock-kpi-num">41</div><div class="mock-kpi-label">Cache skip</div></div>
+        </div>
+        <div class="mock-log">
+          <div><span class="log-ok">✓</span> "Teclado Gamer RGB K70" — GPT-4o enriquecido (PT)</div>
+          <div><span class="log-ok">✓</span> Imagem gerada · hash MD5 verificado · salvo storage</div>
+          <div><span class="log-skip">⚡</span> EAN 7898478190123 — cached · skip re-enrich</div>
+          <div><span class="log-info">→</span> Publicando na loja · SKU + tags + preço calculado</div>
+          <div><span class="log-warn">⚠</span> 2 produtos com erro de imagem — continuando...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FUNCIONALIDADES ══ -->
+<section class="features-section" id="funcionalidades">
+  <div class="container">
+    <div class="reveal">
+      <div class="sec-label">Funcionalidades</div>
+      <h2 class="sec-title">Tudo que você precisa para sincronizar em escala</h2>
+      <p class="sec-sub">FastAPI, Celery, Redis e PostgreSQL — integração com qualquer plataforma de e-commerce via API.</p>
+    </div>
+    <div class="features-grid reveal">
+
+      <div class="feat-card c-collect">
+        <div class="feat-icon blue">🕷️</div>
+        <h3>Coleta automatizada</h3>
+        <p>Conecte seu fornecedor e deixe a Trinis coletar produtos, preços e imagens por você — de forma contínua, sem intervenção manual.</p>
+        <span class="feat-tag blue">Collect</span>
+      </div>
+
+      <div class="feat-card c-collect">
+        <div class="feat-icon blue">⚡</div>
+        <h3>Sincronização inteligente</h3>
+        <p>Produtos já enriquecidos não são reprocessados. A Trinis identifica o que é novo e foca os créditos de IA onde realmente importa.</p>
+        <span class="feat-tag blue">Collect</span>
+      </div>
+
+      <div class="feat-card c-collect">
+        <div class="feat-icon blue">🔒</div>
+        <h3>Seguro e multi-loja</h3>
+        <p>Gerencie múltiplas lojas e fornecedores em uma única conta, com dados completamente isolados entre clientes e credenciais protegidas.</p>
+        <span class="feat-tag blue">Collect</span>
+      </div>
+
+      <div class="feat-card c-enrich">
+        <div class="feat-icon cyan">✍️</div>
+        <h3>Textos com a sua voz</h3>
+        <p>Títulos e descrições reescritos com IA no tom da sua marca, no idioma da sua loja — Português, Inglês ou Espanhol. Prontos para publicar.</p>
+        <span class="feat-tag cyan">Enrich</span>
+      </div>
+
+      <div class="feat-card c-enrich">
+        <div class="feat-icon cyan">🖼️</div>
+        <h3>Imagens aprimoradas com IA</h3>
+        <p>Transforme fotos comuns de fornecedores em imagens de produto profissionais. O Bulk Image Enhance processa todo o catálogo de uma vez.</p>
+        <span class="feat-tag cyan">Enrich · Bulk Image</span>
+      </div>
+
+      <div class="feat-card c-enrich">
+        <div class="feat-icon cyan">🤖</div>
+        <h3>Escolha o modelo de IA</h3>
+        <p>Com o AI Model Add-on, selecione o modelo mais adequado para cada tarefa — equilibrando qualidade e custo conforme o seu volume.</p>
+        <span class="feat-tag cyan">Enrich · AI Model Add-on</span>
+      </div>
+
+      <div class="feat-card c-deliver">
+        <div class="feat-icon purple">🚀</div>
+        <h3>Publicação automática</h3>
+        <p>Produtos enriquecidos chegam à sua loja com preços, SKUs e categorias corretos — sem você precisar tocar em nada.</p>
+        <span class="feat-tag purple">Deliver</span>
+      </div>
+
+      <div class="feat-card c-deliver">
+        <div class="feat-icon purple">👥</div>
+        <h3>Trabalhe em equipe</h3>
+        <p>Convide colaboradores, defina responsabilidades e acompanhe tudo o que acontece na conta com histórico completo de atividades.</p>
+        <span class="feat-tag purple">Deliver · Pro+</span>
+      </div>
+
+      <div class="feat-card c-deliver">
+        <div class="feat-icon purple">🪙</div>
+        <h3>Créditos sob demanda</h3>
+        <p>Estourou o plano no meio do mês? Compre créditos avulsos e continue sincronizando sem interrupção — sem precisar fazer upgrade.</p>
+        <span class="feat-tag purple">Deliver · Add-on</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══ PIPELINE ══ -->
+<section id="pipeline">
+  <div class="container">
+    <div class="reveal">
+      <div class="sec-label">Como funciona</div>
+      <h2 class="sec-title">Três etapas. Zero esforço manual.</h2>
+      <p class="sec-sub">Configure uma vez e deixe a Trinis AI trabalhar por você — do fornecedor à vitrine, de forma contínua e automática.</p>
+    </div>
+    <div class="pipeline-wrap reveal">
+      <div class="pipeline-line"></div>
+      <div class="pipeline-steps">
+
+        <div class="pipeline-step">
+          <div class="pipeline-node" style="border-color:rgba(46,85,212,0.45)">🕷️</div>
+          <span class="pipeline-step-phase phase-collect">Collect</span>
+          <div class="pipeline-step-name">Conecte</div>
+          <div class="pipeline-step-desc">Aponte para o catálogo do seu fornecedor. A Trinis coleta tudo automaticamente.</div>
+        </div>
+
+        <div class="pipeline-step" style="grid-column: 2 / span 3; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center;">
+          <div style="display:flex; gap:16px; align-items:center; justify-content:center; position:relative; z-index:2;">
+            <div class="pipeline-node" style="border-color:rgba(0,201,167,0.45)">✍️</div>
+            <div style="font-size:0.7rem; color:var(--muted);">+</div>
+            <div class="pipeline-node" style="border-color:rgba(0,201,167,0.45)">🖼️</div>
+            <div style="font-size:0.7rem; color:var(--muted);">+</div>
+            <div class="pipeline-node" style="border-color:rgba(0,201,167,0.45)">🤖</div>
+          </div>
+          <span class="pipeline-step-phase phase-enrich">Enrich</span>
+          <div class="pipeline-step-name">Enriqueça</div>
+          <div class="pipeline-step-desc">IA reescreve textos, melhora imagens e aplica o modelo certo — no idioma da sua loja.</div>
+        </div>
+
+        <div class="pipeline-step">
+          <div class="pipeline-node" style="border-color:rgba(155,93,229,0.45)">🚀</div>
+          <span class="pipeline-step-phase phase-deliver">Deliver</span>
+          <div class="pipeline-step-name">Publique</div>
+          <div class="pipeline-step-desc">Produtos chegam à sua loja com preços, SKUs e categorias prontos.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ BACKUP ══ -->
+<section class="backup-section" id="backup">
+  <div class="container">
+    <div class="reveal">
+      <div class="sec-label">Backup Add-on</div>
+      <h2 class="sec-title">Snapshots automáticos do seu catálogo</h2>
+      <p class="sec-sub">Backup diário automático, restauração seletiva e download direto. Armazenado com segurança no storage S3-compatible.</p>
+    </div>
+    <div class="backup-layout">
+      <div class="backup-features reveal">
+        <div class="backup-feat">
+          <div class="backup-feat-icon">📸</div>
+          <div>
+            <h4>Snapshot por loja</h4>
+            <p>Backup completo de produtos por loja, isolado por tenant.</p>
+          </div>
+        </div>
+        <div class="backup-feat">
+          <div class="backup-feat-icon">🤖</div>
+          <div>
+            <h4>Backup automático diário</h4>
+            <p>Executa às 2h UTC para planos Standard e Premium. Limpeza automática às 3h UTC conforme retenção do plano.</p>
+          </div>
+        </div>
+        <div class="backup-feat">
+          <div class="backup-feat-icon">♻️</div>
+          <div>
+            <h4>Restauração inteligente</h4>
+            <p>Restaure todos os produtos ou apenas novos (<span class="code-inline">mode=all|new_only</span>). Download direto do snapshot com apenas 1 clique!</p>
+          </div>
+        </div>
+        <div class="backup-feat">
+          <div class="backup-feat-icon">🗄️</div>
+          <div>
+            <h4>Retenção por plano</h4>
+            <p>7, 30 ou 90 dias de retenção. Snapshots expirados removidos automaticamente.</p>
+          </div>
+        </div>
+      </div>
+      <div class="backup-plans-card reveal">
+        <div class="backup-plans-header">💾 Planos de Backup — Add-on</div>
+        <div class="backup-plan-row">
+          <div class="bp-name">Basic</div>
+          <div>
+            <div class="bp-desc">Proteção essencial, manual</div>
+            <div class="bp-chips"><span class="bp-chip">5 snapshots</span><span class="bp-chip">7 dias</span><span class="bp-chip">Manual</span></div>
+          </div>
+          <div class="bp-price">+$9/mo</div>
+        </div>
+        <div class="backup-plan-row">
+          <div class="bp-name">Standard</div>
+          <div>
+            <div class="bp-desc">Auto-backup diário</div>
+            <div class="bp-chips"><span class="bp-chip">30 snapshots</span><span class="bp-chip">30 dias</span><span class="bp-chip" style="color:var(--cyan);border-color:rgba(0,201,167,0.3)">Auto diário</span></div>
+          </div>
+          <div class="bp-price">+$19/mo</div>
+        </div>
+        <div class="backup-plan-row" style="background:rgba(155,93,229,0.04)">
+          <div class="bp-name" style="color:#c4b5fd">Premium</div>
+          <div>
+            <div class="bp-desc">Proteção máxima, 90 dias</div>
+            <div class="bp-chips">
+              <span class="bp-chip" style="color:#c4b5fd;border-color:rgba(155,93,229,0.3)">Ilimitado</span>
+              <span class="bp-chip" style="color:#c4b5fd;border-color:rgba(155,93,229,0.3)">90 dias</span>
+              <span class="bp-chip" style="color:#c4b5fd;border-color:rgba(155,93,229,0.3)">Auto diário</span>
+            </div>
+          </div>
+          <div class="bp-price" style="color:#c4b5fd">+$39/mo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PLANOS ══ -->
+<section id="planos">
+  <div class="container">
+    <div class="reveal">
+      <div class="sec-label">Planos</div>
+      <h2 class="sec-title">Escale conforme seu negócio cresce</h2>
+      <p class="sec-sub">Comece grátis. Sem cartão de crédito. Backup add-on disponível em qualquer plano pago.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="plan-card reveal">
+        <div class="plan-name">Free</div>
+        <div class="plan-price"><sup>$</sup>0<span class="mo">/mês</span></div>
+        <div class="plan-desc">Para validar o fluxo sem custo.</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> 100 produtos/mês</li>
+          <li><span class="check">✓</span> 1 usuário · 1 loja</li>
+          <li><span class="check">✓</span> 10 produtos por job</li>
+          <li><span class="check">✓</span> Logs em tempo real</li>
+          <li class="li-x"><span class="check-x">✕</span> Times</li>
+          <li class="li-x"><span class="check-x">✕</span> Backup add-on</li>
+        </ul>
+        <a href="/register" class="plan-btn">Começar grátis</a>
+      </div>
+      <div class="plan-card reveal">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price"><sup>$</sup>19<span class="mo">/mês</span></div>
+        <div class="plan-desc">Para lojas em crescimento inicial.</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> 300 produtos/mês</li>
+          <li><span class="check">✓</span> 1 usuário · 2 lojas</li>
+          <li><span class="check">✓</span> 50 produtos por job</li>
+          <li><span class="check">✓</span> Logs em tempo real</li>
+          <li><span class="check">✓</span> Backup add-on disponível</li>
+          <li class="li-x"><span class="check-x">✕</span> Times</li>
+        </ul>
+        <a href="/register" class="plan-btn">Começar agora</a>
+      </div>
+      <div class="plan-card featured reveal">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price"><sup>$</sup>49<span class="mo">/mês</span></div>
+        <div class="plan-desc">Para times com alto volume de produtos.</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> 1.000 produtos/mês</li>
+          <li><span class="check">✓</span> 5 usuários · 5 lojas</li>
+          <li><span class="check">✓</span> Jobs ilimitados</li>
+          <li><span class="check">✓</span> Times + convites</li>
+          <li><span class="check">✓</span> Audit log completo</li>
+          <li><span class="check">✓</span> SKU / Tags / Pricing manual</li>
+          <li><span class="check">✓</span> Backup add-on disponível</li>
+        </ul>
+        <a href="/register" class="plan-btn feat-btn">Começar agora</a>
+      </div>
+      <div class="plan-card reveal">
+        <div class="plan-name">Business A partir de </div>
+        <div class="plan-price"><sup>$</sup>149<span class="mo">/mês</span></div>
+        <div class="plan-desc">Para operações de grande escala.</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> 5.000 produtos/mês</li>
+          <li><span class="check">✓</span> 20 usuários · 20 lojas</li>
+          <li><span class="check">✓</span> Jobs ilimitados</li>
+          <li><span class="check">✓</span> Times + audit log completo</li>
+          <li><span class="check">✓</span> Backup add-on disponível</li>
+          <li><span class="check">✓</span> Suporte prioritário</li>
+        </ul>
+        <a href="/register" class="plan-btn">Falar com vendas</a>
+      </div>
+    </div>
+    <div class="backup-note reveal">
+      <div class="backup-note-icon">🧩</div>
+      <div class="backup-note-text">
+        <strong>Add-ons disponíveis em qualquer plano pago</strong>
+        <span>Expanda as capacidades da Trinis conforme a sua operação cresce — sem precisar mudar de plano.</span>
+      </div>
+      <div class="backup-note-plans">
+        <div class="backup-chip">💾 Backup</div>
+        <div class="backup-chip">🖼️ Bulk Image</div>
+        <div class="backup-chip">🤖 AI Model</div>
+        <div class="backup-chip">🪙 Créditos</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ADD-ONS ══ -->
+<section id="addons">
+  <div class="container">
+    <div class="reveal">
+      <div class="sec-label">Add-ons</div>
+      <h2 class="sec-title">Expanda quando precisar</h2>
+      <p class="sec-sub">Todos os add-ons funcionam em qualquer plano pago, com cobrança separada via Stripe.</p>
+    </div>
+    <div class="addons-grid">
+
+      <div class="addon-card reveal">
+        <div class="addon-icon cyan">💾</div>
+        <div class="addon-body">
+          <h3>Backup</h3>
+          <p>Snapshots automáticos do seu catálogo com restauração seletiva. Nunca mais perca dados por um erro de sincronização.</p>
+          <div class="addon-plans">
+            <span class="addon-plan-chip cyan">Basic +$9/mo · 5 snapshots · 7 dias</span>
+            <span class="addon-plan-chip cyan">Standard +$19/mo · 30 snapshots · 30 dias</span>
+            <span class="addon-plan-chip cyan">Premium +$39/mo · Ilimitado · 90 dias</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="addon-card reveal">
+        <div class="addon-icon blue">🖼️</div>
+        <div class="addon-body">
+          <h3>Bulk Image Enhance</h3>
+          <p>Transforme o catálogo inteiro de fotos de fornecedor em imagens de produto profissionais com um clique — usando os melhores modelos de imagem do mercado.</p>
+          <div class="addon-plans">
+            <span class="addon-plan-chip blue">Pacotes por volume de imagens</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="addon-card reveal">
+        <div class="addon-icon purple">🤖</div>
+        <div class="addon-body">
+          <h3>AI Model</h3>
+          <p>Escolha o modelo de IA utilizado no enriquecimento de texto e geração de imagens. Equilibre qualidade e custo conforme o seu volume e exigência de resultado.</p>
+          <div class="addon-plans">
+            <span class="addon-plan-chip purple">Modelos premium disponíveis</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="addon-card reveal">
+        <div class="addon-icon amber">🪙</div>
+        <div class="addon-body">
+          <h3>Créditos sob demanda</h3>
+          <p>Estourou o limite do plano no meio do mês? Compre créditos avulsos e continue sincronizando sem interrupção — sem precisar fazer upgrade de plano.</p>
+          <div class="addon-plans">
+            <span class="addon-plan-chip amber">Pacotes de créditos flexíveis</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══ FAQ ══ -->
+<section class="faq-section" id="faq">
+  <div class="container">
+    <div class="reveal">
+      <div class="sec-label">FAQ</div>
+      <h2 class="sec-title">Perguntas frequentes</h2>
+    </div>
+    <div class="faq-grid">
+      <div class="faq-item reveal"><div class="faq-q">Preciso saber programar para usar?<div class="faq-toggle">+</div></div><div class="faq-a">Não. A interface é 100% visual. Configure o fornecedor, conecte sua loja e dispare a sincronização sem nenhuma linha de código.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">Com quais plataformas de e-commerce funciona?<div class="faq-toggle">+</div></div><div class="faq-a">A Trinis AI integra com plataformas de e-commerce via API REST. Novas integrações são adicionadas conforme a demanda dos clientes.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">O que é o Bulk Image Enhance?<div class="faq-toggle">+</div></div><div class="faq-a">Um add-on que aplica IA para transformar as fotos originais do fornecedor em imagens de produto de alta qualidade. Você processa o catálogo inteiro de uma vez, sem precisar editar imagem por imagem.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">Para que serve o AI Model Add-on?<div class="faq-toggle">+</div></div><div class="faq-a">Por padrão, a Trinis usa os modelos mais eficientes para enriquecer seus produtos. Com o AI Model Add-on, você pode escolher modelos premium para obter resultados ainda melhores — ideal para catálogos onde a qualidade do texto faz diferença na conversão.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">O que acontece se eu esgotar os créditos do plano?<div class="faq-toggle">+</div></div><div class="faq-a">Com o add-on de Créditos sob demanda, você compra pacotes avulsos e continua sincronizando normalmente até o início do próximo ciclo — sem interrupções e sem precisar mudar de plano.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">O que é o Backup Add-on?<div class="faq-toggle">+</div></div><div class="faq-a">Um serviço que cria snapshots do seu catálogo de forma automática. Se algo der errado em uma sincronização, você restaura os produtos com um clique — podendo escolher restaurar tudo ou apenas os produtos afetados.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">Posso ter múltiplos usuários na conta?<div class="faq-toggle">+</div></div><div class="faq-a">Sim, nos planos Pro (5 usuários) e Business (20 usuários). Convide membros por e-mail. O dono gerencia billing, plano e cancelamentos. Todas as ações ficam registradas no histórico de atividades.</div></div>
+      <div class="faq-item reveal"><div class="faq-q">Posso cancelar a qualquer momento?<div class="faq-toggle">+</div></div><div class="faq-a">Sim, sem fidelidade. O cancelamento é feito diretamente no painel. Seu acesso permanece ativo até o fim do período pago. Add-ons são cancelados de forma independente.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA ══ -->
+<section class="cta-section">
+  <div class="cta-inner reveal">
+    <h2>Comece a sincronizar hoje,<br>sem cartão de crédito</h2>
+    <p>Collect, Enrich e Deliver — o pipeline completo com IA para o seu e-commerce.</p>
+    <a href="/register" class="btn-hero">Criar conta grátis →</a>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <a href="/" class="nav-logo" aria-label="Trinis AI">
+    <svg viewBox="0 0 220 52" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:28px;width:auto">
+      <path d="M8 8 L52 8 L52 26 L8 26 Z" fill="#1a2f7a"/>
+      <path d="M34 8 L52 8 L52 50 L34 50 Z" fill="#1a2f7a"/>
+      <path d="M34 26 Q34 50 58 50 L110 50" fill="none" stroke="#1a2f7a" stroke-width="18" stroke-linecap="butt"/>
+      <polygon points="104,41 118,50 104,59" fill="#1a2f7a"/>
+      <path d="M4 4 L50 4 L50 22 L4 22 Z" fill="white"/>
+      <path d="M30 4 L50 4 L50 48 L30 48 Z" fill="white"/>
+      <path d="M30 22 Q30 48 56 48 L108 48" fill="none" stroke="white" stroke-width="18" stroke-linecap="butt"/>
+      <polygon points="102,39 118,48 102,57" fill="white"/>
+      <polygon points="10,30 2,35 2,45 10,50 18,45 18,35" fill="#2e55d4"/>
+      <polygon points="20,24 12,29 12,39 20,44 28,39 28,29" fill="#00c9a7"/>
+      <polygon points="20,38 12,43 12,53 20,58 28,53 28,43" fill="#9b5de5"/>
+      <text x="130" y="38" font-family="'Outfit', sans-serif" font-size="26" font-weight="700" fill="white" letter-spacing="-0.5">Trinis</text>
+      <text x="196" y="38" font-family="'Outfit', sans-serif" font-size="26" font-weight="800" fill="#00c9a7" letter-spacing="-0.5"> AI</text>
+    </svg>
+  </a>
+  <p>© 2025 Trinis AI. Todos os direitos reservados.</p>
+  <ul class="footer-links">
+    <li><a href="/login">Entrar</a></li>
+    <li><a href="#planos">Planos</a></li>
+    <li><a href="#backup">Backup</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+</footer>
+
+<script>
+  document.querySelectorAll('.faq-item').forEach(item => {
+    item.querySelector('.faq-q').addEventListener('click', () => {
+      const open = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!open) item.classList.add('open');
+    });
+  });
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  let lastY = 0;
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    document.querySelector('nav').style.opacity = (y > lastY && y > 100) ? '0.75' : '1';
+    lastY = y;
+  }, { passive: true });
+</script>
+</body>
+</html>
