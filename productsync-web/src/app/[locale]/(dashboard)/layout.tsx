@@ -57,10 +57,7 @@ export default function DashboardLayout({
       <aside className="w-48 flex-shrink-0 flex flex-col bg-gray-50 border-r border-gray-200">
         {/* Logo */}
         <div className="px-4 py-3 border-b border-gray-200">
-          <span className="flex items-center gap-1.5 text-sm font-medium text-gray-900">
-            <Zap size={14} className="text-brand-600" />
-            ProductSync
-          </span>
+          <img src="/trinis.svg" alt="Trinis AI" className="h-7 w-auto" />
         </div>
 
         {/* Nav */}
