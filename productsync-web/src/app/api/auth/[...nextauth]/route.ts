@@ -3,7 +3,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+const API_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
 // Access token expires in 60 min — refresh 5 min before expiry
 const ACCESS_TOKEN_EXPIRE_MS = 55 * 60 * 1000;
