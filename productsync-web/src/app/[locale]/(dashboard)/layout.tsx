@@ -57,7 +57,7 @@ export default function DashboardLayout({
       <aside className="w-48 flex-shrink-0 flex flex-col bg-gray-50 border-r border-gray-200">
         {/* Logo */}
         <div className="px-4 py-3 border-b border-gray-200">
-          <img src="/trinis.svg" alt="Trinis AI" className="h-7 w-auto" />
+          <img src="/trinis.svg" alt="Trinis AI" className="h-8 w-auto max-w-[140px]" />
         </div>
 
         {/* Nav */}
