@@ -1,6 +1,5 @@
 node_modules/
 .next/
 .env.local
-.env.prod
 tests/
 .git
