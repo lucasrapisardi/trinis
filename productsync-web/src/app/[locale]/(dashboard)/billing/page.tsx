@@ -13,30 +13,34 @@ const PLANS = [
   {
     name: "free" as PlanName,
     label: "Free",
-    price: "$0",
-    features: ["10 produtos / mês", "1 loja", "Sincronização manual"],
-    limit: 10,
+    monthlyPrice: "$0",
+    annualPrice: "$0",
+    annualTotal: "",
+    features: ["5 produtos / mês", "1 loja", "Sincronização manual"],
   },
   {
     name: "starter" as PlanName,
     label: "Starter",
-    price: "$19",
-    features: ["300 produtos / mês", "2 lojas", "Sincronização agendada"],
-    limit: 300,
+    monthlyPrice: "$29",
+    annualPrice: "$24.65",
+    annualTotal: "$295/yr",
+    features: ["200 produtos / mês", "1 lojas", "Sincronização agendada"],
   },
   {
     name: "pro" as PlanName,
     label: "Pro",
-    price: "$49",
-    features: ["1.000 produtos / mês", "5 lojas", "Sincronização agendada", "Enriquecimento por IA"],
-    limit: 1000,
+    monthlyPrice: "$69",
+    annualPrice: "$58.65",
+    annualTotal: "$703/yr",
+    features: ["500 produtos / mês", "3 lojas", "Sincronização agendada", "Enriquecimento por IA"],
   },
   {
     name: "business" as PlanName,
     label: "Business",
-    price: "$149",
-    features: ["10.000 produtos / mês", "Lojas ilimitadas", "Fila prioritária", "Regras de IA personalizadas"],
-    limit: 10000,
+    monthlyPrice: "$169",
+    annualPrice: "$143.65",
+    annualTotal: "$1.723/yr",
+    features: ["1000 produtos / mês", "5 lojas", "Fila prioritária", "Regras de IA personalizadas"],
   },
 ];
 
@@ -60,6 +64,8 @@ export default function BillingPage() {
   const [bulkEnhance, setBulkEnhance] = useState<{plan: string, is_active: boolean} | null>(null);
   const [loadingBulkEnhance, setLoadingBulkEnhance] = useState<string | null>(null);
   const [loadingModelAddon, setLoadingModelAddon] = useState<string | null>(null);
+  const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
+
 
   useEffect(() => {
     tenantApi.get().then((r) => setTenant(r.data)).catch(() => null);
@@ -115,11 +121,13 @@ export default function BillingPage() {
     }
   }
 
+
+
   async function handleUpgrade(plan: PlanName) {
     if (plan === "free") return;
     setLoadingPlan(plan);
     try {
-      const r = await billingApi.checkout(plan);
+      const r = await billingApi.checkout(plan, billingInterval);
       window.location.href = r.data.checkout_url;
     } catch {
       toast.error("Failed to start checkout");
@@ -140,9 +148,10 @@ export default function BillingPage() {
     <div className="p-5 max-w-3xl mx-auto space-y-5">
       <h1 className="text-base font-medium text-gray-900">Billing</h1>
 
+
       {/* Current plan + usage */}
-      <div className="grid grid-cols-5 gap-4">
-        <div className="col-span-3 card space-y-4">
+      <div className="grid grid-cols-1 gap-4">
+        <div className="card space-y-4">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs text-gray-400 mb-1">Current plan</p>
@@ -186,7 +195,7 @@ export default function BillingPage() {
             )}
           </div>
 
-          <div className="flex gap-2 pt-1">
+          <div className="flex items-center gap-3 pt-1 border-t border-gray-100 mt-2">
             <button
               onClick={handleManageBilling}
               disabled={loadingPortal}
@@ -194,11 +203,39 @@ export default function BillingPage() {
             >
               {loadingPortal ? "Abrindo…" : t("manageBilling")}
             </button>
+            {tenant?.plan !== "free" && tenant?.plan !== "cancelled" && (
+              <button
+                onClick={handleManageBilling}
+                disabled={loadingPortal}
+                className="btn text-xs border border-brand-300 text-brand-600 hover:bg-brand-50"
+              >
+                {billingInterval === "yearly" ? "Switch to Monthly" : "Switch to Annual →"}
+              </button>
+            )}
+            <div className="flex items-center gap-2 ml-auto border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50">
+              <span className={clsx("text-xs", billingInterval === "monthly" ? "text-gray-700 font-medium" : "text-gray-400")}>Monthly</span>
+              <button
+                onClick={() => setBillingInterval(b => b === "monthly" ? "yearly" : "monthly")}
+                className={clsx(
+                  "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                  billingInterval === "yearly" ? "bg-brand-600" : "bg-gray-200"
+                )}
+              >
+                <span className={clsx(
+                  "inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform",
+                  billingInterval === "yearly" ? "translate-x-4" : "translate-x-1"
+                )} />
+              </button>
+              <span className={clsx("text-xs", billingInterval === "yearly" ? "text-gray-700 font-medium" : "text-gray-400")}>
+                Annual
+                <span className="ml-1 text-[10px] bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded font-medium">-15%</span>
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Billing details */}
-        <div className="col-span-2 card">
+        <div className="card">
           <p className="text-xs font-medium text-gray-700 mb-3">Billing details</p>
           <div className="space-y-2.5 text-xs">
             {[
@@ -251,14 +288,17 @@ export default function BillingPage() {
                 )}
               </div>
 
-              <p className="text-lg font-medium text-gray-900 mb-3">
-                {plan.price}
+              <p className="text-lg font-medium text-gray-900 mb-0.5">
+                {billingInterval === "yearly" ? plan.annualPrice : plan.monthlyPrice}
                 {plan.name !== "free" && (
-                  <span className="text-xs font-normal text-gray-400"> / mo</span>
+                  <span className="text-xs font-normal text-gray-400"> /mo</span>
                 )}
               </p>
+              {billingInterval === "yearly" && plan.annualTotal && (
+                <p className="text-[10px] text-gray-400 mb-2">billed as {plan.annualTotal}</p>
+              )}
 
-              <ul className="space-y-1.5 mb-4">
+              <ul className="space-y-1.5 mb-4 mt-2">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-center gap-1.5 text-xs text-gray-500">
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">

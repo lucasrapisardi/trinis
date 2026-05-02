@@ -12,23 +12,34 @@ const PLANS = [
   {
     name: "free" as PlanName,
     label: "Free",
-    price: "$0",
-    features: ["100 products / mo", "1 store", "Manual sync only"],
-    limit: 100,
+    monthlyPrice: "$0",
+    annualPrice: "$0",
+    annualTotal: "",
+    features: ["5 produtos / mês", "1 loja", "Sincronização manual"],
+  },
+  {
+    name: "starter" as PlanName,
+    label: "Starter",
+    monthlyPrice: "$29",
+    annualPrice: "$24.65",
+    annualTotal: "$295/yr",
+    features: ["200 produtos / mês", "1 lojas", "Sincronização agendada"],
   },
   {
     name: "pro" as PlanName,
     label: "Pro",
-    price: "$49",
-    features: ["1,000 products / mo", "5 stores", "Scheduled sync", "AI enrichment"],
-    limit: 1000,
+    monthlyPrice: "$69",
+    annualPrice: "$58.65",
+    annualTotal: "$703/yr",
+    features: ["500 produtos / mês", "3 lojas", "Sincronização agendada", "Enriquecimento por IA"],
   },
   {
     name: "business" as PlanName,
     label: "Business",
-    price: "$149",
-    features: ["10,000 products / mo", "Unlimited stores", "Priority queue", "Custom AI rules"],
-    limit: 10000,
+    monthlyPrice: "$169",
+    annualPrice: "$143.65",
+    annualTotal: "$1.723/yr",
+    features: ["1000 produtos / mês", "5 lojas", "Fila prioritária", "Regras de IA personalizadas"],
   },
 ];
 
@@ -61,11 +72,13 @@ export default function BillingPage() {
     }
   }
 
+  const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
+
   async function handleUpgrade(plan: PlanName) {
     if (plan === "free") return;
     setLoadingPlan(plan);
     try {
-      const r = await billingApi.checkout(plan);
+      const r = await billingApi.checkout(plan, billingInterval);
       window.location.href = r.data.checkout_url;
     } catch {
       toast.error("Failed to start checkout");
@@ -85,7 +98,41 @@ export default function BillingPage() {
   return (
     <div className="p-5 max-w-3xl mx-auto space-y-5">
       <h1 className="text-base font-medium text-gray-900">Billing</h1>
-
+      {/* Billing interval toggle */}
+      <div className="flex items-center justify-center gap-3">
+        <span className={clsx("text-xs", billingInterval === "monthly" ? "text-gray-900 font-medium" : "text-gray-400")}>
+          Monthly
+        </span>
+        <button
+          onClick={() => setBillingInterval(b => b === "monthly" ? "yearly" : "monthly")}
+          className={clsx(
+            "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+            billingInterval === "yearly" ? "bg-brand-600" : "bg-gray-200"
+          )}
+        >
+          <span className={clsx(
+            "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform",
+            billingInterval === "yearly" ? "translate-x-4" : "translate-x-1"
+          )} />
+        </button>
+        <span className={clsx("text-xs", billingInterval === "yearly" ? "text-gray-900 font-medium" : "text-gray-400")}>
+          Annual
+          <span className="ml-1.5 text-[10px] bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded font-medium">
+            Save 15%
+          </span>
+        </span>
+      </div>
+      <p className="text-lg font-medium text-gray-900 mb-1">
+        {billingInterval === "yearly" ? plan.annualPrice : plan.monthlyPrice}
+        {plan.name !== "free" && (
+          <span className="text-xs font-normal text-gray-400"> /mo</span>
+        )}
+      </p>
+      {billingInterval === "yearly" && plan.annualTotal && (
+        <p className="text-[10px] text-gray-400 mb-3">
+          billed as {plan.annualTotal}
+        </p>
+      )}
       {/* Current plan + usage */}
       <div className="grid grid-cols-5 gap-4">
         <div className="col-span-3 card space-y-4">

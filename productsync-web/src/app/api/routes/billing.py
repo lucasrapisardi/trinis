@@ -12,15 +12,28 @@ settings = get_settings()
 stripe.api_key = settings.stripe_secret_key
 router = APIRouter(prefix="/billing", tags=["billing"])
 
+# Substituir os dois mapas atuais por:
+
 PLAN_PRICE_MAP = {
     PlanName.free: None,
+    PlanName.starter: settings.stripe_starter_price_id,
     PlanName.pro: settings.stripe_pro_price_id,
     PlanName.business: settings.stripe_business_price_id,
 }
 
+PLAN_ANNUAL_PRICE_MAP = {
+    PlanName.starter: settings.stripe_starter_annual_price_id,
+    PlanName.pro: settings.stripe_pro_annual_price_id,
+    PlanName.business: settings.stripe_business_annual_price_id,
+}
+
 PRICE_PLAN_MAP = {
+    settings.stripe_starter_price_id: PlanName.starter,
     settings.stripe_pro_price_id: PlanName.pro,
     settings.stripe_business_price_id: PlanName.business,
+    settings.stripe_starter_annual_price_id: PlanName.starter,
+    settings.stripe_pro_annual_price_id: PlanName.pro,
+    settings.stripe_business_annual_price_id: PlanName.business,
 }
 
 
@@ -31,17 +44,21 @@ PRICE_PLAN_MAP = {
 @router.post("/checkout/{plan}")
 async def create_checkout(
     plan: PlanName,
+    interval: Literal["monthly", "yearly"] = "monthly",
     tenant: Tenant = Depends(get_current_tenant),
     current_user: User = Depends(get_current_user),
 ):
     if plan == PlanName.free:
         raise HTTPException(400, "Cannot checkout to free plan")
 
-    price_id = PLAN_PRICE_MAP.get(plan)
+    if interval == "yearly":
+        price_id = PLAN_ANNUAL_PRICE_MAP.get(plan)
+    else:
+        price_id = PLAN_PRICE_MAP.get(plan)
+
     if not price_id:
         raise HTTPException(400, "Invalid plan")
 
-    # Create or retrieve Stripe customer
     if not tenant.stripe_customer_id:
         customer = stripe.Customer.create(
             email=current_user.email,

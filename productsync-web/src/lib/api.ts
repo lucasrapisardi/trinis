@@ -88,7 +88,7 @@ export const jobsApi = {
 
 // ── Billing ───────────────────────────────────────────────────────────────
 export const billingApi = {
-  checkout: (plan: string) => api.post(`/billing/checkout/${plan}`),
+  checkout: (plan: string, interval: "monthly" | "yearly" = "monthly") => api.post(`/billing/checkout/${plan}?interval=${interval}`),
   portal: () => api.post("/billing/portal"),
   creditsCheckout: (pack: string) => api.post(`/billing/credits/checkout/${pack}`),
   bulkEnhanceCheckout: (plan: string) => api.post(`/billing/bulk-enhance/checkout/${plan}`),

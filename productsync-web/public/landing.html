@@ -247,6 +247,21 @@
   .plan-btn.feat-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); border-color: transparent; box-shadow: 0 0 24px rgba(0,201,167,0.2); }
   .plan-btn.feat-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 0 40px rgba(0,201,167,0.35); }
 
+  /* ── Billing toggle ── */
+  .billing-toggle-wrap { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 32px 0 40px; }
+  .billing-toggle-label { font-size: 0.82rem; color: var(--muted); transition: color 0.2s; }
+  .billing-toggle-label.active { color: var(--text); font-weight: 600; }
+  .billing-toggle { position: relative; width: 44px; height: 24px; background: rgba(255,255,255,0.1); border-radius: 100px; cursor: pointer; border: 1px solid var(--border2); transition: background 0.3s; flex-shrink: 0; }
+  .billing-toggle.on { background: linear-gradient(135deg, var(--blue), var(--cyan)); border-color: transparent; }
+  .billing-toggle-knob { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: transform 0.3s; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .billing-toggle.on .billing-toggle-knob { transform: translateX(20px); }
+  .save-badge { display: inline-block; background: rgba(0,201,167,0.15); color: var(--cyan); border: 1px solid rgba(0,201,167,0.3); border-radius: 100px; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; margin-left: 6px; letter-spacing: 0.04em; }
+  .plan-price-annual { display: none; }
+  .plan-billed-note { font-size: 0.7rem; color: var(--muted); margin-top: 4px; min-height: 16px; }
+  body.annual .plan-price-monthly { display: none; }
+  body.annual .plan-price-annual { display: block; }
+
+
   .backup-note { margin-top: 28px; padding: 20px 28px; background: rgba(155,93,229,0.06); border: 1px solid rgba(155,93,229,0.2); border-radius: 12px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
   .backup-note-icon { font-size: 1.4rem; flex-shrink: 0; }
   .backup-note-text { flex: 1; }
@@ -632,6 +647,13 @@
       <h2 class="sec-title">Escale conforme seu negócio cresce</h2>
       <p class="sec-sub">Comece grátis. Sem cartão de crédito. Backup add-on disponível em qualquer plano pago.</p>
     </div>
+    <div class="billing-toggle-wrap">
+      <span class="billing-toggle-label active" id="lbl-monthly">Mensal</span>
+      <div class="billing-toggle" id="billing-toggle">
+        <div class="billing-toggle-knob"></div>
+      </div>
+      <span class="billing-toggle-label" id="lbl-annual">Anual <span class="save-badge">-15%</span></span>
+    </div>
     <div class="pricing-grid">
       <div class="plan-card reveal">
         <div class="plan-name">Free</div>
@@ -650,7 +672,9 @@
       </div>
       <div class="plan-card reveal">
         <div class="plan-name">Starter</div>
-        <div class="plan-price"><sup>$</sup>19<span class="mo">/mês</span></div>
+        <div class="plan-price plan-price-monthly"><sup>$</sup>29<span class="mo">/mês</span></div>
+        <div class="plan-price plan-price-annual"><sup>$</sup>24<span style="font-size:1.4rem">.65</span><span class="mo">/mês</span></div>
+        <div class="plan-billed-note" id="note-starter"></div>
         <div class="plan-desc">Para lojas em crescimento inicial.</div>
         <div class="plan-divider"></div>
         <ul class="plan-features">
@@ -665,7 +689,9 @@
       </div>
       <div class="plan-card featured reveal">
         <div class="plan-name">Pro</div>
-        <div class="plan-price"><sup>$</sup>49<span class="mo">/mês</span></div>
+        <div class="plan-price plan-price-monthly"><sup>$</sup>69<span class="mo">/mês</span></div>
+        <div class="plan-price plan-price-annual"><sup>$</sup>58<span style="font-size:1.4rem">.65</span><span class="mo">/mês</span></div>
+        <div class="plan-billed-note" id="note-pro"></div>
         <div class="plan-desc">Para times com alto volume de produtos.</div>
         <div class="plan-divider"></div>
         <ul class="plan-features">
@@ -681,7 +707,9 @@
       </div>
       <div class="plan-card reveal">
         <div class="plan-name">Business A partir de </div>
-        <div class="plan-price"><sup>$</sup>149<span class="mo">/mês</span></div>
+        <div class="plan-price plan-price-monthly"><sup>$</sup>169<span class="mo">/mês</span></div>
+        <div class="plan-price plan-price-annual"><sup>$</sup>143<span style="font-size:1.4rem">.65</span><span class="mo">/mês</span></div>
+        <div class="plan-billed-note" id="note-business"></div>
         <div class="plan-desc">Para operações de grande escala.</div>
         <div class="plan-divider"></div>
         <ul class="plan-features">
@@ -865,6 +893,35 @@
     })
     .catch(function() {});
 })();
+</script>
+
+<script>
+  (function() {
+    var toggle = document.getElementById('billing-toggle');
+    var lblMonthly = document.getElementById('lbl-monthly');
+    var lblAnnual = document.getElementById('lbl-annual');
+    var annual = false;
+    var notes = {
+      'note-starter':  { monthly: '', annual: 'cobrado como $295/ano' },
+      'note-pro':      { monthly: '', annual: 'cobrado como $703/ano' },
+      'note-business': { monthly: '', annual: 'cobrado como $1.723/ano' },
+    };
+    function setNotes() {
+      Object.keys(notes).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = annual ? notes[id].annual : notes[id].monthly;
+      });
+    }
+    toggle.addEventListener('click', function() {
+      annual = !annual;
+      toggle.classList.toggle('on', annual);
+      document.body.classList.toggle('annual', annual);
+      lblMonthly.classList.toggle('active', !annual);
+      lblAnnual.classList.toggle('active', annual);
+      setNotes();
+    });
+    setNotes();
+  })();
 </script>
 </body>
 </html>
